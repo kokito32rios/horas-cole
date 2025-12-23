@@ -6,53 +6,40 @@
     <title>Panel Administrador - Registro Horas Cole</title>
     <link rel="stylesheet" href="/css/styles.css" />
   </head>
-  <!-- MODAL: Cerrar Sesión -->
-    <div id="modalCerrarSesion" class="modal">
-        <div class="modal-content modal-small">
-            <div class="modal-icon" style="font-size: 4rem; text-align: center; margin-bottom: 1rem;">
-                👋
-            </div>
-            <h2 style="text-align: center; color: var(--primary-color);">¿Cerrar Sesión?</h2>
-            <p style="text-align: center; color: var(--text-light); margin: 1.5rem 0;">
-                ¿Estás segur@ de que deseas salir del sistema?
-            </p>
-            <div class="modal-actions">
-                <button class="btn btn-primary" onclick="confirmarCerrarSesion()">Sí, Cerrar Sesión</button>
-                <button class="btn btn-secondary" onclick="cerrarModal('modalCerrarSesion')">Cancelar</button>
-            </div>
-        </div>
-    </div>
-
-</body>
-</html>
   <body class="admin-body">
-<!-- Header del Panel -->
-<header class="admin-header">
-    <div class="admin-header-content">
+    <!-- Header del Panel -->
+    <header class="admin-header">
+      <div class="admin-header-content">
         <div class="admin-logo">
-            <h1>👑 Registro Horas Cole</h1>
-            <span class="admin-badge">Administrador</span>
+          <h1>👑 Registro Horas Cole</h1>
+          <span class="admin-badge">Administrador</span>
         </div>
-        
 
-        
         <div class="admin-user">
-            <span class="welcome-text">Bienvenida, <strong id="nombreUsuario"></strong></span>
-            <button class="btn btn-secondary btn-sm" onclick="cerrarSesion()">Cerrar Sesión</button>
+          <span class="welcome-text"
+            >Bienvenida, <strong id="nombreUsuario"></strong
+          ></span>
+          <button class="btn btn-secondary btn-sm" onclick="cerrarSesion()">
+            Cerrar Sesión
+          </button>
         </div>
-    </div>
-</header>
+      </div>
+    </header>
 
-<!-- Navegación por pestañas con overlay -->
+    <!-- Navegación por pestañas con overlay -->
 
-<nav class="admin-nav" id="adminNav">
-    <button class="nav-btn active" data-tab="dashboard">📊 Dashboard</button>
-    <button class="nav-btn" data-tab="usuarios">👥 Usuarios</button>
-    <button class="nav-btn" data-tab="grupos">📚 Grupos</button>
-    <button class="nav-btn" data-tab="cursos">💰 Cursos</button>
-    <button class="nav-btn" data-tab="bancos">🏦 Bancos</button>
-    <button class="nav-btn" data-tab="perfil">👤 Mi Perfil</button>
-</nav>
+    <nav class="admin-nav" id="adminNav">
+      <button class="nav-btn active" data-tab="dashboard">📊 Dashboard</button>
+      <button class="nav-btn" data-tab="usuarios">👥 Usuarios</button>
+      <button class="nav-btn" data-tab="grupos">📚 Grupos</button>
+      <button class="nav-btn" data-tab="cursos">💰 Cursos</button>
+      <button class="nav-btn" data-tab="bancos">🏦 Bancos</button>
+      <button class="nav-btn" data-tab="cuentas-cobro">
+        📄 Cuentas de Cobro
+      </button>
+      <button class="nav-btn" data-tab="historico">⏱️ Histórico Horas</button>
+      <button class="nav-btn" data-tab="perfil">👤 Mi Perfil</button>
+    </nav>
 
     <!-- Contenedor principal -->
     <main class="admin-main">
@@ -156,34 +143,34 @@
           </table>
         </div>
       </section>
-<!-- TAB: MÓDULOS -->
-<section id="tab-cursos" class="tab-content">
-    <div class="tab-header">
-        <h2 class="tab-title">📚 Módulos del Programa</h2>
-        <button class="btn btn-primary" onclick="abrirModalCurso()">
+      <!-- TAB: MÓDULOS -->
+      <section id="tab-cursos" class="tab-content">
+        <div class="tab-header">
+          <h2 class="tab-title">📚 Módulos del Programa</h2>
+          <button class="btn btn-primary" onclick="abrirModalCurso()">
             ➕ Nuevo Módulo
-        </button>
-    </div>
+          </button>
+        </div>
 
-    <div class="table-container">
-        <table class="admin-table">
+        <div class="table-container">
+          <table class="admin-table">
             <thead>
-                <tr>
-                    <th>Programa</th>
-                    <th>Módulo</th>
-                    <th>Valor/Hora</th>
-                    <th>Estado</th>
-                    <th>Acciones</th>
-                </tr>
+              <tr>
+                <th>Programa</th>
+                <th>Módulo</th>
+                <th>Valor/Hora</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
             </thead>
             <tbody id="tablaCursos">
-                <tr>
-                    <td colspan="5" class="text-center">Cargando...</td>
-                </tr>
+              <tr>
+                <td colspan="5" class="text-center">Cargando...</td>
+              </tr>
             </tbody>
-        </table>
-    </div>
-</section>
+          </table>
+        </div>
+      </section>
 
       <!-- TAB: BANCOS -->
       <section id="tab-bancos" class="tab-content">
@@ -247,6 +234,92 @@
               </table>
             </div>
           </div>
+        </div>
+      </section>
+
+      <!-- NUEVA TAB: CUENTAS DE COBRO -->
+      <section id="tab-cuentas-cobro" class="tab-content">
+        <h2 class="tab-title">📄 Cuentas de Cobro Generadas</h2>
+        <div class="table-container">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Docente</th>
+                <th>Documento</th>
+                <th>Período</th>
+                <th>Total Horas</th>
+                <th>Total a Pagar</th>
+                <th>Generado</th>
+                <th>PDF</th>
+              </tr>
+            </thead>
+            <tbody id="tablaCuentasCobro">
+              <tr>
+                <td colspan="7" class="text-center">Cargando...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- NUEVA TAB: HISTÓRICO DE HORAS -->
+      <section id="tab-historico" class="tab-content">
+        <h2 class="tab-title">⏱️ Histórico de Registros de Horas</h2>
+
+        <div class="filtros-container">
+          <div
+            class="form-row"
+            style="align-items: end; gap: 1rem; flex-wrap: wrap"
+          >
+            <div class="form-group">
+              <label>Desde</label>
+              <input type="date" id="filtroDesde" />
+            </div>
+            <div class="form-group">
+              <label>Hasta</label>
+              <input type="date" id="filtroHasta" />
+            </div>
+            <div class="form-group">
+              <label>Docente</label>
+
+              <select id="filtroDocente">
+                <option value="">Todos los docentes</option>
+              </select>
+            </div>
+            <div>
+              <button class="btn btn-primary" id="btnFiltrarHistorico">
+                🔍 Filtrar
+              </button>
+              <button class="btn btn-secondary" id="btnLimpiarFiltros">
+                🗑️ Limpiar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Docente</th>
+                <th>Documento</th>
+                <th>Grupo</th>
+                <th>Módulo</th>
+                <th>Programa</th>
+                <th>Horas</th>
+                <th>Ingreso</th>
+                <th>Salida</th>
+                <th>Tema</th>
+                <th>Observaciones</th>
+              </tr>
+            </thead>
+            <tbody id="tablaHistorico">
+              <tr>
+                <td colspan="11" class="text-center">Cargando...</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </section>
 
@@ -459,10 +532,15 @@
           <input type="hidden" id="cursoId" />
 
           <div class="form-group">
-                <label>Programa *</label>
-                <input type="text" id="cursoPrograma" placeholder="Ej: Técnico en Belleza" required>
-                <small>Nombre del programa educativo</small>
-            </div>
+            <label>Programa *</label>
+            <input
+              type="text"
+              id="cursoPrograma"
+              placeholder="Ej: Técnico en Belleza"
+              required
+            />
+            <small>Nombre del programa educativo</small>
+          </div>
 
           <div class="form-group">
             <label>Nombre del Módulo *</label>
@@ -608,42 +686,118 @@
 
     <!-- MODAL: Confirmar Activar/Desactivar Usuario -->
     <div id="modalConfirmarEstado" class="modal">
-        <div class="modal-content modal-small">
-            <div class="modal-icon" id="iconoEstado" style="font-size: 4rem; text-align: center; margin-bottom: 1rem;">
-                ⚠️
-            </div>
-            <h2 style="text-align: center; color: var(--primary-color);" id="tituloEstado">Confirmar acción</h2>
-            <p style="text-align: center; color: var(--text-dark); margin: 1.5rem 0;" id="mensajeEstado">
-                ¿Estás segur@ de realizar esta acción?
-            </p>
-            <div class="modal-actions">
-                <button class="btn btn-primary" id="btnConfirmarEstado">Confirmar</button>
-                <button class="btn btn-secondary" onclick="cerrarModal('modalConfirmarEstado')">Cancelar</button>
-            </div>
+      <div class="modal-content modal-small">
+        <div
+          class="modal-icon"
+          id="iconoEstado"
+          style="font-size: 4rem; text-align: center; margin-bottom: 1rem"
+        >
+          ⚠️
         </div>
+        <h2
+          style="text-align: center; color: var(--primary-color)"
+          id="tituloEstado"
+        >
+          Confirmar acción
+        </h2>
+        <p
+          style="text-align: center; color: var(--text-dark); margin: 1.5rem 0"
+          id="mensajeEstado"
+        >
+          ¿Estás segur@ de realizar esta acción?
+        </p>
+        <div class="modal-actions">
+          <button class="btn btn-primary" id="btnConfirmarEstado">
+            Confirmar
+          </button>
+          <button
+            class="btn btn-secondary"
+            onclick="cerrarModal('modalConfirmarEstado')"
+          >
+            Cancelar
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- MODAL: Confirmar Eliminar Usuario -->
     <div id="modalEliminarUsuario" class="modal">
-        <div class="modal-content modal-small">
-            <div class="modal-icon" style="font-size: 4rem; text-align: center; margin-bottom: 1rem;">
-                🗑️
-            </div>
-            <h2 style="text-align: center; color: #dc3545;">¡Atención!</h2>
-            <p style="text-align: center; color: var(--text-dark); margin: 1.5rem 0;">
-                <strong>¿Estás segur@ de eliminar este usuario?</strong><br>
-                Esta acción NO se puede deshacer y se eliminará todo el historial asociado.
-            </p>
-            <div style="background: #fff3cd; padding: 1rem; border-radius: 10px; margin-bottom: 1rem; text-align: left;">
-                <p style="margin: 0; color: #856404; font-size: 0.9rem;">
-                    💡 <strong>Recomendación:</strong> Es mejor desactivar el usuario para mantener el historial.
-                </p>
-            </div>
-            <div class="modal-actions">
-                <button class="btn btn-primary" style="background: #dc3545;" id="btnConfirmarEliminar">Sí, Eliminar</button>
-                <button class="btn btn-secondary" onclick="cerrarModal('modalEliminarUsuario')">Cancelar</button>
-            </div>
+      <div class="modal-content modal-small">
+        <div
+          class="modal-icon"
+          style="font-size: 4rem; text-align: center; margin-bottom: 1rem"
+        >
+          🗑️
         </div>
+        <h2 style="text-align: center; color: #dc3545">¡Atención!</h2>
+        <p
+          style="text-align: center; color: var(--text-dark); margin: 1.5rem 0"
+        >
+          <strong>¿Estás segur@ de eliminar este usuario?</strong><br />
+          Esta acción NO se puede deshacer y se eliminará todo el historial
+          asociado.
+        </p>
+        <div
+          style="
+            background: #fff3cd;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            text-align: left;
+          "
+        >
+          <p style="margin: 0; color: #856404; font-size: 0.9rem">
+            💡 <strong>Recomendación:</strong> Es mejor desactivar el usuario
+            para mantener el historial.
+          </p>
+        </div>
+        <div class="modal-actions">
+          <button
+            class="btn btn-primary"
+            style="background: #dc3545"
+            id="btnConfirmarEliminar"
+          >
+            Sí, Eliminar
+          </button>
+          <button
+            class="btn btn-secondary"
+            onclick="cerrarModal('modalEliminarUsuario')"
+          >
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: Cerrar Sesión -->
+    <div id="modalCerrarSesion" class="modal">
+      <div class="modal-content modal-small">
+        <div
+          class="modal-icon"
+          style="font-size: 4rem; text-align: center; margin-bottom: 1rem"
+        >
+          👋
+        </div>
+        <h2 style="text-align: center; color: var(--primary-color)">
+          ¿Cerrar Sesión?
+        </h2>
+        <p
+          style="text-align: center; color: var(--text-light); margin: 1.5rem 0"
+        >
+          ¿Estás segur@ de que deseas salir del sistema?
+        </p>
+        <div class="modal-actions">
+          <button class="btn btn-primary" onclick="confirmarCerrarSesion()">
+            Sí, Cerrar Sesión
+          </button>
+          <button
+            class="btn btn-secondary"
+            onclick="cerrarModal('modalCerrarSesion')"
+          >
+            Cancelar
+          </button>
+        </div>
+      </div>
     </div>
 
     <script src="/js/admin.js"></script>

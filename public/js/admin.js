@@ -35,7 +35,7 @@ async function verificarSesion() {
 }
 
 // ========================================
-// NAVEGACIÓN POR PESTAÑAS
+// NAVEGACIÓN POR PESTAÑAS (ÚNICA Y ACTUALIZADA)
 // ========================================
 function configurarNavegacion() {
     document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -49,6 +49,11 @@ function configurarNavegacion() {
             // Activar el seleccionado
             btn.classList.add('active');
             document.getElementById(`tab-${tabName}`).classList.add('active');
+            
+            // Cerrar menú en móvil (si tienes la función toggleMenu)
+            if (window.innerWidth <= 768) {
+                toggleMenu();
+            }
             
             // Cargar datos según la pestaña
             if (tabName === 'usuarios') {
@@ -67,8 +72,24 @@ function configurarNavegacion() {
                 cargarTiposCuenta();
             } else if (tabName === 'perfil') {
                 cargarMiPerfil();
+            } 
+            // NUEVAS PESTAÑAS
+            else if (tabName === 'cuentas-cobro') {
+                cargarCuentasCobro();
+            } else if (tabName === 'historico') {
+                cargarDocentesFiltro();
+                cargarHistoricoHoras();
             }
         });
+    });
+
+    // Eventos de filtro del histórico
+    document.getElementById('btnFiltrarHistorico')?.addEventListener('click', cargarHistoricoHoras);
+    document.getElementById('btnLimpiarFiltros')?.addEventListener('click', () => {
+        document.getElementById('filtroDesde').value = '';
+        document.getElementById('filtroHasta').value = '';
+        document.getElementById('filtroDocente').value = '';
+        cargarHistoricoHoras();
     });
 }
 
@@ -870,7 +891,6 @@ document.getElementById('formCurso').addEventListener('submit', async (e) => {
             mostrarNotificacion(data.mensaje, 'success');
             cerrarModal('modalCurso');
             cargarTiposCurso();
-            // Recargar selector de tipos de curso si está en la pestaña de grupos
             cargarTiposCursoSelect();
         } else {
             mostrarNotificacion(data.error || 'Error al guardar', 'error');
@@ -1090,7 +1110,7 @@ document.getElementById('formBanco').addEventListener('submit', async (e) => {
             mostrarNotificacion(data.mensaje, 'success');
             cerrarModal('modalBanco');
             cargarBancos();
-            cargarBancosSelect(); // Actualizar selector
+            cargarBancosSelect();
         } else {
             mostrarNotificacion(data.error || 'Error al guardar', 'error');
         }
@@ -1307,7 +1327,7 @@ document.getElementById('formTipoCuenta').addEventListener('submit', async (e) =
             mostrarNotificacion(data.mensaje, 'success');
             cerrarModal('modalTipoCuenta');
             cargarTiposCuenta();
-            cargarTiposCuentaSelect(); // Actualizar selector
+            cargarTiposCuentaSelect();
         } else {
             mostrarNotificacion(data.error || 'Error al guardar', 'error');
         }
@@ -1474,47 +1494,96 @@ if (window.innerWidth <= 768) {
 }
 
 // ========================================
-// MENÚ HAMBURGUESA
+// NUEVAS FUNCIONES: CUENTAS DE COBRO Y HISTÓRICO
 // ========================================
+async function cargarCuentasCobro() {
+    try {
+        const response = await fetch('/api/admin/cuentas-cobro');
+        const data = await response.json();
 
+        const tbody = document.getElementById('tablaCuentasCobro');
 
-// Cerrar menú al hacer clic en una opción (solo en móvil)
-function configurarNavegacion() {
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const tabName = btn.dataset.tab;
-            
-            // Desactivar todos
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-            
-            // Activar el seleccionado
-            btn.classList.add('active');
-            document.getElementById(`tab-${tabName}`).classList.add('active');
-            
-            // Cerrar menú en móvil
-            if (window.innerWidth <= 768) {
-                toggleMenu();
-            }
-            
-            // Cargar datos según la pestaña
-            if (tabName === 'usuarios') {
-                cargarUsuarios();
-                cargarSelectores();
-            } else if (tabName === 'dashboard') {
-                cargarEstadisticas();
-            } else if (tabName === 'grupos') {
-                cargarGrupos();
-                cargarTiposCursoSelect();
-                cargarDocentesSelect();
-            } else if (tabName === 'cursos') {
-                cargarTiposCurso();
-            } else if (tabName === 'bancos') {
-                cargarBancos();
-                cargarTiposCuenta();
-            } else if (tabName === 'perfil') {
-                cargarMiPerfil();
-            }
-        });
-    });
+        if (!data.success || data.cuentas.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center">No hay cuentas de cobro generadas</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = data.cuentas.map(c => `
+            <tr>
+                <td>${c.docente}</td>
+                <td>${c.documento}</td>
+                <td><strong>${c.mes}/${c.anio}</strong></td>
+                <td>${parseFloat(c.total_horas).toFixed(2)}</td>
+                <td>${formatearMoneda(c.total_pagar)}</td>
+                <td>${c.generado_el}</td>
+                <td>
+                    <button class="btn-icon" title="Ver PDF (próximamente)">📄</button>
+                </td>
+            </tr>
+        `).join('');
+
+    } catch (error) {
+        console.error('Error cargando cuentas de cobro:', error);
+        mostrarNotificacion('Error al cargar cuentas de cobro', 'error');
+    }
+}
+
+async function cargarHistoricoHoras() {
+    try {
+        const desde = document.getElementById('filtroDesde').value || '';
+        const hasta = document.getElementById('filtroHasta').value || '';
+        const docente_id = document.getElementById('filtroDocente').value || '';
+
+        let url = '/api/admin/historico-horas';
+        const params = new URLSearchParams();
+        if (desde) params.append('desde', desde);
+        if (hasta) params.append('hasta', hasta);
+        if (docente_id) params.append('docente_id', docente_id);
+        if (params.toString()) url += '?' + params.toString();
+
+        const response = await fetch(url);
+        const data = await response.json();
+
+        const tbody = document.getElementById('tablaHistorico');
+
+        if (!data.success || data.registros.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="11" class="text-center">No hay registros con los filtros aplicados</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = data.registros.map(r => `
+            <tr>
+                <td>${r.fecha}</td>
+                <td>${r.docente}</td>
+                <td>${r.documento}</td>
+                <td>${r.grupo_codigo} - ${r.grupo_nombre}</td>
+                <td>${r.modulo}</td>
+                <td>${r.programa || '-'}</td>
+                <td>${parseFloat(r.horas_trabajadas).toFixed(2)}</td>
+                <td>${r.hora_ingreso}</td>
+                <td>${r.hora_salida || '—'}</td>
+                <td>${r.tema_desarrollado || '-'}</td>
+                <td>${r.observaciones || '-'}</td>
+            </tr>
+        `).join('');
+
+    } catch (error) {
+        console.error('Error cargando histórico:', error);
+        mostrarNotificacion('Error al cargar histórico', 'error');
+    }
+}
+
+async function cargarDocentesFiltro() {
+    try {
+        const response = await fetch('/api/admin/docentes');
+        const data = await response.json();
+
+        if (data.success) {
+            const select = document.getElementById('filtroDocente');
+            select.innerHTML = '<option value="">Todos los docentes</option>' +
+                data.docentes.map(d => `<option value="${d.id_usuario}">${d.nombre} (${d.documento})</option>`).join('');
+        }
+    } catch (error) {
+        console.error('Error cargando docentes para filtro:', error);
+    }
 }

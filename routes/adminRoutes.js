@@ -21,6 +21,11 @@ router.put('/usuarios/:id', adminController.actualizarUsuario);
 router.patch('/usuarios/:id/estado', adminController.cambiarEstadoUsuario);
 router.put('/usuarios/:id/password', adminController.cambiarContrasena);
 router.delete('/usuarios/:id', adminController.eliminarUsuario);
+router.get('/cuentas-cobro', adminController.obtenerCuentasCobro);
+router.get('/historico-horas', adminController.obtenerHistoricoHoras);
+
+
+module.exports = router;
 
 // ========================================
 // GESTIÓN BANCARIA

@@ -725,6 +725,92 @@ const eliminarTipoCuenta = async (req, res) => {
 
 
 
+
+
+// ========================================
+// CUENTAS DE COBRO GENERADAS
+// ========================================
+const obtenerCuentasCobro = async (req, res) => {
+    try {
+        const [cuentas] = await db.query(`
+            SELECT 
+                cc.id_cuenta,
+                u.nombre AS docente,
+                u.documento,
+                cc.mes,
+                cc.anio,
+                cc.total_horas,
+                cc.total_pagar,
+                DATE_FORMAT(cc.generado_el, '%d/%m/%Y %H:%i') AS generado_el
+            FROM cuentas_cobro cc
+            JOIN usuarios u ON cc.id_docente = u.id_usuario
+            WHERE u.id_rol = 2
+            ORDER BY cc.anio DESC, cc.mes DESC, u.nombre
+        `);
+
+        res.json({ success: true, cuentas });
+    } catch (error) {
+        console.error('Error obteniendo cuentas de cobro:', error);
+        res.status(500).json({ error: 'Error al obtener cuentas de cobro' });
+    }
+};
+
+// ========================================
+// HISTÓRICO DE REGISTROS DE HORAS
+// ========================================
+const obtenerHistoricoHoras = async (req, res) => {
+    try {
+        const { desde, hasta, docente_id } = req.query;
+
+        let query = `
+            SELECT 
+                rh.id_registro,
+                u.nombre AS docente,
+                u.documento,
+                g.codigo AS grupo_codigo,
+                g.nombre AS grupo_nombre,
+                tc.modulo,
+                tc.programa,
+                rh.fecha,
+                rh.hora_ingreso,
+                rh.hora_salida,
+                rh.horas_trabajadas,
+                rh.tema_desarrollado,
+                rh.observaciones
+            FROM registros_horas rh
+            JOIN usuarios u ON rh.id_docente = u.id_usuario
+            JOIN grupos g ON rh.id_grupo = g.id_grupo
+            JOIN tipos_curso tc ON g.id_tipo = tc.id_tipo
+            WHERE u.id_rol = 2
+        `;
+
+        const params = [];
+
+        if (desde) {
+            query += ' AND rh.fecha >= ?';
+            params.push(desde);
+        }
+        if (hasta) {
+            query += ' AND rh.fecha <= ?';
+            params.push(hasta);
+        }
+        if (docente_id) {
+            query += ' AND rh.id_docente = ?';
+            params.push(docente_id);
+        }
+
+        query += ' ORDER BY rh.fecha DESC, u.nombre';
+
+        const [registros] = await db.query(query, params);
+
+        res.json({ success: true, registros });
+    } catch (error) {
+        console.error('Error obteniendo histórico de horas:', error);
+        res.status(500).json({ error: 'Error al obtener histórico' });
+    }
+};
+
+// === AGREGA ESTAS DOS AL module.exports ===
 module.exports = {
     obtenerEstadisticas,
     obtenerUsuarios,
@@ -755,4 +841,7 @@ module.exports = {
     eliminarTipoCurso,
     eliminarBanco,
     eliminarTipoCuenta,
+    // === NUEVAS FUNCIONES ===
+    obtenerCuentasCobro,
+    obtenerHistoricoHoras
 };
