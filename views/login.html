@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Iniciar Sesión - Registro Horas Cole</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body class="login-body">
+    <!-- Modal de Registro -->
+    <div id="modalRegistro" class="modal">
+      <div class="modal-content">
+        <span class="close-modal">&times;</span>
+        <div class="modal-icon">👑</div>
+        <h2>¿Necesitas una cuenta?</h2>
+        <p class="modal-text">
+          Para obtener acceso al sistema, por favor comunícate con kokito rios.
+        </p>
+        <div class="modal-details">
+          <p>📧 Solicita tu usuario y contraseña</p>
+          <p>👩‍💼 Solo personal autorizado</p>
+          <p>✨ Acceso exclusivo para docentes</p>
+        </div>
+        <button class="btn btn-primary" onclick="cerrarModal()">
+          Entendido
+        </button>
+      </div>
+    </div>
+
+    <div class="login-container">
+      <!-- Botón Volver al Inicio -->
+      <a href="/" class="back-home">
+        <span>← Volver al inicio</span>
+      </a>
+
+      <div class="login-card">
+        <div class="login-header">
+          <div class="login-logo">
+            <svg width="70" height="70" viewBox="0 0 70 70" fill="none">
+              <circle cx="35" cy="25" r="8" fill="#570861" opacity="0.9" />
+              <path
+                d="M35 35 Q30 40, 28 48 Q28 52, 32 52 L38 52 Q42 52, 42 48 Q40 40, 35 35"
+                fill="#570861"
+                opacity="0.9"
+              />
+              <path
+                d="M20 30 Q18 35, 22 38"
+                stroke="#570861"
+                stroke-width="2"
+                opacity="0.7"
+              />
+              <path
+                d="M50 30 Q52 35, 48 38"
+                stroke="#570861"
+                stroke-width="2"
+                opacity="0.7"
+              />
+            </svg>
+          </div>
+          <h1>✨ Bienvenida ✨</h1>
+          <p class="login-subtitle">Registro Horas Cole</p>
+        </div>
+
+        <form id="loginForm" class="login-form">
+          <div class="form-group">
+            <label for="documento">
+              <span class="label-icon">👤</span>
+              Número de Documento
+            </label>
+            <input
+              type="text"
+              id="documento"
+              name="documento"
+              placeholder="Ingresa tu documento"
+              required
+              autocomplete="username"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="password">
+              <span class="label-icon">🔒</span>
+              Contraseña
+            </label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              placeholder="Ingresa tu contraseña"
+              required
+              autocomplete="current-password"
+            />
+          </div>
+
+          <div id="errorMessage" class="error-message"></div>
+
+          <button type="submit" class="btn btn-primary btn-login">
+            <span>Iniciar Sesión</span>
+            <span class="btn-icon">→</span>
+          </button>
+        </form>
+
+        <div class="login-footer">
+          <p class="register-text">
+            ¿No tienes cuenta?
+            <a href="#" class="register-link" onclick="mostrarModal(event)"
+              >Solicitar acceso</a
+            >
+          </p>
+        </div>
+      </div>
+
+      <div class="login-decoration">
+        <div class="decoration-circle circle-1"></div>
+        <div class="decoration-circle circle-2"></div>
+        <div class="decoration-circle circle-3"></div>
+      </div>
+    </div>
+
+    <script src="/js/login.js"></script>
+  </body>
+</html>

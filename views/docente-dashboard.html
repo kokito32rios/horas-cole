@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Panel Docente - Registro Horas Cole</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body class="admin-body">
+    <!-- Header del Panel -->
+    <header class="admin-header">
+      <div class="admin-header-content">
+        <div class="admin-logo">
+          <h1>💅 Registro Horas Cole</h1>
+          <span class="admin-badge">Docente</span>
+        </div>
+
+        <!-- Botón hamburguesa (solo visible en móvil) -->
+        <button
+          class="hamburger-btn"
+          id="hamburgerBtn"
+          onclick="toggleMenuDocente()"
+        >
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+
+        <div class="admin-user">
+          <span class="welcome-text"
+            >Bienvenida, <strong id="nombreUsuario"></strong
+          ></span>
+          <button
+            class="btn btn-secondary btn-sm"
+            onclick="cerrarSesionDocente()"
+          >
+            Cerrar Sesión
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Navegación por pestañas con overlay -->
+    <div
+      class="nav-overlay"
+      id="navOverlay"
+      onclick="toggleMenuDocente()"
+    ></div>
+    <nav class="admin-nav" id="adminNav">
+      <button class="nav-btn active" data-tab="dashboard">📊 Dashboard</button>
+      <button class="nav-btn" data-tab="grupos">📚 Mis Grupos</button>
+      <button class="nav-btn" data-tab="registrar">⏰ Registrar Horas</button>
+      <button class="nav-btn" data-tab="historial">📝 Mi Historial</button>
+      <button class="nav-btn" data-tab="cuentas">📄 Cuentas de Cobro</button>
+      <button class="nav-btn" data-tab="perfil">👤 Mi Perfil</button>
+    </nav>
+
+    <!-- Contenedor principal -->
+    <main class="admin-main">
+      <!-- TAB: DASHBOARD -->
+      <section id="tab-dashboard" class="tab-content active">
+        <h2 class="tab-title">📊 Dashboard</h2>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon">📚</div>
+            <div class="stat-content">
+              <h3 id="statMisGrupos">0</h3>
+              <p>Mis Grupos</p>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon">⏰</div>
+            <div class="stat-content">
+              <h3 id="statHorasMes">0</h3>
+              <p>Horas Este Mes</p>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon">📅</div>
+            <div class="stat-content">
+              <h3 id="statClasesMes">0</h3>
+              <p>Clases Este Mes</p>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon">💰</div>
+            <div class="stat-content">
+              <h3 id="statTotalPagar">$0</h3>
+              <p>Total a Cobrar</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="dashboard-info">
+          <div class="info-card">
+            <h3>🎯 Acciones Rápidas</h3>
+            <div class="quick-actions">
+              <button
+                class="btn btn-primary"
+                onclick="cambiarTabDocente('registrar')"
+              >
+                ⏰ Registrar Horas
+              </button>
+              <button
+                class="btn btn-secondary"
+                onclick="cambiarTabDocente('historial')"
+              >
+                📝 Ver Historial
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB: MIS GRUPOS -->
+      <section id="tab-grupos" class="tab-content">
+        <h2 class="tab-title">📚 Mis Grupos Asignados</h2>
+
+        <div class="table-container">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th>Nombre del Grupo</th>
+                <th>Tipo de Curso</th>
+                <th>Valor/Hora</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody id="tablaMisGrupos">
+              <tr>
+                <td colspan="5" class="text-center">Cargando...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- TAB: REGISTRAR HORAS -->
+      <section id="tab-registrar" class="tab-content">
+        <h2 class="tab-title">⏰ Registrar Horas</h2>
+
+        <div class="registro-form-container">
+          <form id="formRegistrarHora" class="registro-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Fecha *</label>
+                <input type="date" id="registroFecha" required />
+              </div>
+
+              <div class="form-group">
+                <label>Grupo *</label>
+                <select id="registroGrupo" required>
+                  <option value="">Seleccionar grupo...</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>Hora de Ingreso *</label>
+                <input type="time" id="registroHoraIngreso" required />
+              </div>
+
+              <div class="form-group">
+                <label>Hora de Salida *</label>
+                <input type="time" id="registroHoraSalida" required />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Observaciones (opcional)</label>
+              <textarea
+                id="registroObservaciones"
+                rows="3"
+                placeholder="Ej: Tema visto, novedades..."
+              ></textarea>
+            </div>
+
+            <div class="horas-calculadas">
+              <p>
+                ⏱️ Total de horas: <strong id="horasCalculadas">0.00</strong>
+              </p>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-large">
+              ✅ Guardar Registro
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <!-- TAB: HISTORIAL -->
+      <section id="tab-historial" class="tab-content">
+        <h2 class="tab-title">📝 Mi Historial de Horas</h2>
+
+        <div class="filtros-container">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Desde</label>
+              <input type="date" id="filtroDesde" />
+            </div>
+
+            <div class="form-group">
+              <label>Hasta</label>
+              <input type="date" id="filtroHasta" />
+            </div>
+
+            <div class="form-group">
+              <label>Grupo</label>
+              <select id="filtroGrupo">
+                <option value="">Todos los grupos</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <button class="btn btn-primary" onclick="buscarHistorial()">
+                🔍 Buscar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Grupo</th>
+                <th>Ingreso</th>
+                <th>Salida</th>
+                <th>Horas</th>
+                <th>Valor</th>
+                <th>Observaciones</th>
+              </tr>
+            </thead>
+            <tbody id="tablaHistorial">
+              <tr>
+                <td colspan="7" class="text-center">Cargando...</td>
+              </tr>
+            </tbody>
+            <tfoot id="totalHistorial" style="display: none">
+              <tr>
+                <td colspan="4" style="text-align: right">
+                  <strong>TOTAL:</strong>
+                </td>
+                <td><strong id="totalHoras">0.00</strong></td>
+                <td><strong id="totalValor">$0</strong></td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </section>
+
+      <!-- TAB: CUENTAS DE COBRO -->
+      <section id="tab-cuentas" class="tab-content">
+        <h2 class="tab-title">📄 Cuentas de Cobro</h2>
+
+        <div class="generar-cuenta-container">
+          <div class="cuenta-form">
+            <h3>Generar Nueva Cuenta de Cobro</h3>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Mes</label>
+                <select id="cuentaMes">
+                  <option value="1">Enero</option>
+                  <option value="2">Febrero</option>
+                  <option value="3">Marzo</option>
+                  <option value="4">Abril</option>
+                  <option value="5">Mayo</option>
+                  <option value="6">Junio</option>
+                  <option value="7">Julio</option>
+                  <option value="8">Agosto</option>
+                  <option value="9">Septiembre</option>
+                  <option value="10">Octubre</option>
+                  <option value="11">Noviembre</option>
+                  <option value="12">Diciembre</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Año</label>
+                <select id="cuentaAnio">
+                  <!-- Se llenará con JavaScript -->
+                </select>
+              </div>
+
+              <div class="form-group">
+                <button class="btn btn-primary" onclick="generarCuentaCobro()">
+                  📄 Generar PDF
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="historial-cuentas">
+          <h3>Cuentas Generadas</h3>
+          <div class="table-container">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Período</th>
+                  <th>Total Horas</th>
+                  <th>Total a Cobrar</th>
+                  <th>Fecha Generación</th>
+                  <th>Acción</th>
+                </tr>
+              </thead>
+              <tbody id="tablaCuentas">
+                <tr>
+                  <td colspan="5" class="text-center">
+                    No hay cuentas generadas
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB: MI PERFIL -->
+      <section id="tab-perfil" class="tab-content">
+        <h2 class="tab-title">👤 Mi Perfil</h2>
+
+        <div class="perfil-container">
+          <div class="perfil-card">
+            <div class="perfil-header">
+              <div class="perfil-avatar">💅</div>
+              <h3 id="perfilNombre">Cargando...</h3>
+              <p id="perfilRol" class="perfil-rol">Docente</p>
+            </div>
+
+            <div class="perfil-info">
+              <div class="info-item">
+                <span class="info-label">📄 Documento:</span>
+                <span id="perfilDocumento">-</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">📧 Email:</span>
+                <span id="perfilEmail">-</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">📱 Teléfono:</span>
+                <span id="perfilTelefono">-</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">🏦 Banco:</span>
+                <span id="perfilBanco">-</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">💳 Tipo Cuenta:</span>
+                <span id="perfilTipoCuenta">-</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">🔢 N° Cuenta:</span>
+                <span id="perfilNumeroCuenta">-</span>
+              </div>
+            </div>
+
+            <div class="perfil-actions">
+              <button
+                class="btn btn-primary"
+                onclick="cambiarMiContrasenaDocente()"
+              >
+                🔒 Cambiar Contraseña
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- MODAL: Cambiar Contraseña -->
+    <div id="modalPassword" class="modal">
+      <div class="modal-content modal-small">
+        <span class="close-modal" onclick="cerrarModalDocente('modalPassword')"
+          >&times;</span
+        >
+        <h2>Cambiar Mi Contraseña</h2>
+
+        <form id="formPasswordDocente" class="modal-form">
+          <div class="form-group">
+            <label>Nueva Contraseña *</label>
+            <input type="password" id="passwordNueva" required minlength="6" />
+            <small>Mínimo 6 caracteres</small>
+          </div>
+
+          <div class="form-group">
+            <label>Confirmar Contraseña *</label>
+            <input type="password" id="passwordConfirmar" required />
+          </div>
+
+          <div class="modal-actions">
+            <button type="submit" class="btn btn-primary">Cambiar</button>
+            <button
+              type="button"
+              class="btn btn-secondary"
+              onclick="cerrarModalDocente('modalPassword')"
+            >
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL: Cerrar Sesión -->
+    <div id="modalCerrarSesion" class="modal">
+      <div class="modal-content modal-small">
+        <div
+          class="modal-icon"
+          style="font-size: 4rem; text-align: center; margin-bottom: 1rem"
+        >
+          👋
+        </div>
+        <h2 style="text-align: center; color: var(--primary-color)">
+          ¿Cerrar Sesión?
+        </h2>
+        <p
+          style="text-align: center; color: var(--text-light); margin: 1.5rem 0"
+        >
+          ¿Estás segura de que deseas salir del sistema?
+        </p>
+        <div class="modal-actions">
+          <button
+            class="btn btn-primary"
+            onclick="confirmarCerrarSesionDocente()"
+          >
+            Sí, Cerrar Sesión
+          </button>
+          <button
+            class="btn btn-secondary"
+            onclick="cerrarModalDocente('modalCerrarSesion')"
+          >
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script src="/js/docente.js"></script>
+  </body>
+</html>
