@@ -458,6 +458,7 @@ const obtenerGrupos = async (req, res) => {
                 g.nombre,
                 g.activo,
                 tc.modulo as tipo_curso,
+                tc.programa,
                 tc.id_tipo,
                 tc.valor_hora,
                 u.nombre as docente,
@@ -515,7 +516,7 @@ const crearGrupo = async (req, res) => {
 const actualizarGrupo = async (req, res) => {
     try {
         const { id } = req.params;
-        const { codigo, programa, id_tipo, id_docente } = req.body;
+        const { codigo, nombre, id_tipo, id_docente } = req.body;
         
         // Verificar si el código ya existe en otro grupo
         const [existente] = await db.query(
@@ -528,8 +529,8 @@ const actualizarGrupo = async (req, res) => {
         }
         
         await db.query(
-            'UPDATE grupos SET codigo = ?, programa = ?, id_tipo = ?, id_docente = ? WHERE id_grupo = ?',
-            [codigo, programa, id_tipo, id_docente, id]
+            'UPDATE grupos SET codigo = ?, nombre = ?, id_tipo = ?, id_docente = ? WHERE id_grupo = ?',
+            [codigo, nombre, id_tipo, id_docente, id]
         );
         
         res.json({ success: true, mensaje: 'Grupo actualizado exitosamente' });

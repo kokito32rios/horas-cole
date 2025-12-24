@@ -536,6 +536,7 @@ async function cargarGrupos() {
                     <td><strong>${g.codigo}</strong></td>
                     <td>${g.nombre}</td>
                     <td>${g.tipo_curso}</td>
+                    <td>${g.programa}</td>
                     <td>${formatearMoneda(g.valor_hora)}</td>
                     <td>${g.docente}</td>
                     <td>
@@ -591,6 +592,7 @@ async function cargarDatosGrupo(id) {
                 document.getElementById('grupoCodigo').value = grupo.codigo;
                 document.getElementById('grupoNombre').value = grupo.nombre;
                 document.getElementById('grupoTipo').value = grupo.id_tipo;
+                document.getElementById('grupoPrograma').value = grupo.id_programa;
                 document.getElementById('grupoDocente').value = grupo.id_docente;
             }
         }
@@ -611,6 +613,7 @@ document.getElementById('formGrupo').addEventListener('submit', async (e) => {
         codigo: document.getElementById('grupoCodigo').value,
         nombre: document.getElementById('grupoNombre').value,
         id_tipo: parseInt(document.getElementById('grupoTipo').value),
+        id_programa: parseInt(document.getElementById('grupoPrograma').value),
         id_docente: parseInt(document.getElementById('grupoDocente').value)
     };
     
@@ -752,7 +755,12 @@ async function cargarTiposCursoSelect() {
         if (data.success) {
             const select = document.getElementById('grupoTipo');
             select.innerHTML = '<option value="">Seleccionar...</option>' +
-                data.tipos.filter(t => t.activo).map(t => `<option value="${t.id_tipo}">${t.programa} - ${formatearMoneda(t.valor_hora)}/hora</option>`).join('');
+                data.tipos.filter(t => t.activo).map(t => `<option value="${t.id_tipo}">${t.modulo} - ${formatearMoneda(t.valor_hora)}/hora</option>`).join('');
+        }
+        if (data.success) {
+            const select = document.getElementById('grupoPrograma');
+            select.innerHTML = '<option value="">Seleccionar...</option>' +
+                data.tipos.filter(t => t.activo).map(t => `<option value="${t.id_tipo}">${t.programa}</option>`).join('');
         }
     } catch (error) {
         console.error('Error cargando tipos de curso:', error);
