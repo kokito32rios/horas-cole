@@ -527,7 +527,7 @@ async function cargarGrupos() {
             const tbody = document.getElementById('tablaGrupos');
             
             if (data.grupos.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center">No hay grupos registrados</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center">No hay grupos registrados</td></tr>';
                 return;
             }
             
@@ -752,7 +752,7 @@ async function cargarTiposCursoSelect() {
         if (data.success) {
             const select = document.getElementById('grupoTipo');
             select.innerHTML = '<option value="">Seleccionar...</option>' +
-                data.tipos.filter(t => t.activo).map(t => `<option value="${t.id_tipo}">${t.nombre} - ${formatearMoneda(t.valor_hora)}/hora</option>`).join('');
+                data.tipos.filter(t => t.activo).map(t => `<option value="${t.id_tipo}">${t.programa} - ${formatearMoneda(t.valor_hora)}/hora</option>`).join('');
         }
     } catch (error) {
         console.error('Error cargando tipos de curso:', error);
