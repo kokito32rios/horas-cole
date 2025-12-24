@@ -733,7 +733,9 @@ const eliminarTipoCuenta = async (req, res) => {
 // ========================================
 const obtenerCuentasCobro = async (req, res) => {
     try {
-        const [cuentas] = await db.query(`
+        const { mes, anio, docente_id } = req.query;
+
+        let query = `
             SELECT 
                 cc.id_cuenta,
                 u.nombre AS docente,
@@ -746,8 +748,25 @@ const obtenerCuentasCobro = async (req, res) => {
             FROM cuentas_cobro cc
             JOIN usuarios u ON cc.id_docente = u.id_usuario
             WHERE u.id_rol = 2
-            ORDER BY cc.anio DESC, cc.mes DESC, u.nombre
-        `);
+        `;
+        const params = [];
+
+        if (mes) {
+            query += ' AND cc.mes = ?';
+            params.push(mes);
+        }
+        if (anio) {
+            query += ' AND cc.anio = ?';
+            params.push(anio);
+        }
+        if (docente_id) {
+            query += ' AND cc.id_docente = ?';
+            params.push(docente_id);
+        }
+
+        query += ' ORDER BY cc.anio DESC, cc.mes DESC, u.nombre';
+
+        const [cuentas] = await db.query(query, params);
 
         res.json({ success: true, cuentas });
     } catch (error) {

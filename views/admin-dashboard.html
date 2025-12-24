@@ -238,9 +238,59 @@
         </div>
       </section>
 
-      <!-- NUEVA TAB: CUENTAS DE COBRO -->
+      <!-- TAB: CUENTAS DE COBRO CON FILTROS -->
       <section id="tab-cuentas-cobro" class="tab-content">
         <h2 class="tab-title">📄 Cuentas de Cobro Generadas</h2>
+
+        <div class="filtros-container">
+          <div
+            class="form-row"
+            style="align-items: end; gap: 1rem; flex-wrap: wrap"
+          >
+            <div class="form-group">
+              <label>Mes</label>
+              <select id="filtroMesCuenta">
+                <option value="">Todos los meses</option>
+                <option value="1">Enero</option>
+                <option value="2">Febrero</option>
+                <option value="3">Marzo</option>
+                <option value="4">Abril</option>
+                <option value="5">Mayo</option>
+                <option value="6">Junio</option>
+                <option value="7">Julio</option>
+                <option value="8">Agosto</option>
+                <option value="9">Septiembre</option>
+                <option value="10">Octubre</option>
+                <option value="11">Noviembre</option>
+                <option value="12">Diciembre</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Año</label>
+              <input
+                type="number"
+                id="filtroAnioCuenta"
+                placeholder="Ej: 2025"
+                min="2020"
+              />
+            </div>
+            <div class="form-group">
+              <label>Docente</label>
+              <select id="filtroDocenteCuenta">
+                <option value="">Todos los docentes</option>
+              </select>
+            </div>
+            <div>
+              <button class="btn btn-primary" id="btnFiltrarCuentas">
+                🔍 Filtrar
+              </button>
+              <button class="btn btn-secondary" id="btnLimpiarCuentas">
+                🗑️ Limpiar
+              </button>
+            </div>
+          </div>
+        </div>
+
         <div class="table-container">
           <table class="admin-table">
             <thead>

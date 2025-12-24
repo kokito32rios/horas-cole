@@ -75,6 +75,7 @@ function configurarNavegacion() {
             } 
             // NUEVAS PESTAÑAS
             else if (tabName === 'cuentas-cobro') {
+                cargarDocentesFiltroCuenta();
                 cargarCuentasCobro();
             } else if (tabName === 'historico') {
                 cargarDocentesFiltro();
@@ -1506,13 +1507,24 @@ if (window.innerWidth <= 768) {
 // ========================================
 async function cargarCuentasCobro() {
     try {
-        const response = await fetch('/api/admin/cuentas-cobro');
+        const mes = document.getElementById('filtroMesCuenta').value || '';
+        const anio = document.getElementById('filtroAnioCuenta').value || '';
+        const docente_id = document.getElementById('filtroDocenteCuenta').value || '';
+
+        let url = '/api/admin/cuentas-cobro';
+        const params = new URLSearchParams();
+        if (mes) params.append('mes', mes);
+        if (anio) params.append('anio', anio);
+        if (docente_id) params.append('docente_id', docente_id);
+        if (params.toString()) url += '?' + params.toString();
+
+        const response = await fetch(url);
         const data = await response.json();
 
         const tbody = document.getElementById('tablaCuentasCobro');
 
         if (!data.success || data.cuentas.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center">No hay cuentas de cobro generadas</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center">No hay cuentas de cobro con los filtros aplicados</td></tr>';
             return;
         }
 
@@ -1520,7 +1532,7 @@ async function cargarCuentasCobro() {
             <tr>
                 <td>${c.docente}</td>
                 <td>${c.documento}</td>
-                <td><strong>${c.mes}/${c.anio}</strong></td>
+                <td><strong>${obtenerNombreMes(c.mes)} ${c.anio}</strong></td>
                 <td>${parseFloat(c.total_horas).toFixed(2)}</td>
                 <td>${formatearMoneda(c.total_pagar)}</td>
                 <td>${c.generado_el}</td>
@@ -1535,6 +1547,35 @@ async function cargarCuentasCobro() {
         mostrarNotificacion('Error al cargar cuentas de cobro', 'error');
     }
 }
+
+function obtenerNombreMes(numeroMes) {
+    const meses = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    return meses[parseInt(numeroMes)] || '';
+}
+
+async function cargarDocentesFiltroCuenta() {
+    try {
+        const response = await fetch('/api/admin/docentes');
+        const data = await response.json();
+
+        if (data.success) {
+            const select = document.getElementById('filtroDocenteCuenta');
+            select.innerHTML = '<option value="">Todos los docentes</option>' +
+                data.docentes.map(d => `<option value="${d.id_usuario}">${d.nombre} (${d.documento})</option>`).join('');
+        }
+    } catch (error) {
+        console.error('Error cargando docentes para filtro de cuentas:', error);
+    }
+}
+
+// Eventos de filtro
+document.getElementById('btnFiltrarCuentas')?.addEventListener('click', cargarCuentasCobro);
+document.getElementById('btnLimpiarCuentas')?.addEventListener('click', () => {
+    document.getElementById('filtroMesCuenta').value = '';
+    document.getElementById('filtroAnioCuenta').value = '';
+    document.getElementById('filtroDocenteCuenta').value = '';
+    cargarCuentasCobro();
+});
 
 async function cargarHistoricoHoras() {
     try {
