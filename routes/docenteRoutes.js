@@ -22,7 +22,10 @@ router.get('/historial', docenteController.obtenerHistorial);
 // Cuentas de cobro
 router.post('/cuenta-cobro/:mes/:anio', docenteController.generarCuentaCobro);
 router.get('/cuentas-generadas', docenteController.obtenerCuentasGeneradas);
-router.get('/descargar-cuenta/:id', docenteController.descargarCuenta);
+router.get('/descargar-cuenta-pdf/:id', docenteController.descargarCuentaPDF);
+router.get('/ver-cuenta-pdf/:id', docenteController.verCuentaPDF);
+// router.get('/descargar-cuenta/:id', docenteController.descargarCuenta);
+
 
 // Perfil
 router.get('/mi-perfil', docenteController.obtenerMiPerfil);

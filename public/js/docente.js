@@ -375,11 +375,7 @@ async function generarCuentaCobro() {
         if (response.ok && data.success) {
             mostrarNotificacion('Cuenta de cobro generada exitosamente', 'success');
             
-            // Descargar PDF
-            if (data.pdfUrl) {
-                window.open(data.pdfUrl, '_blank');
-            }
-            
+            // Recargar listado
             cargarCuentasGeneradas();
         } else {
             mostrarNotificacion(data.error || 'Error al generar cuenta de cobro', 'error');
@@ -405,18 +401,21 @@ async function cargarCuentasGeneradas() {
             }
             
             tbody.innerHTML = data.cuentas.map(c => `
-                <tr>
-                    <td data-label="Período:">${getNombreMes(c.mes)} ${c.anio}</td>
-                    <td data-label="Horas:">${parseFloat(c.total_horas).toFixed(2)}</td>
-                    <td data-label="Total:">${formatearMoneda(c.total_pagar)}</td>
-                    <td data-label="Generado:">${formatearFecha(c.generado_el)}</td>
-                    <td data-label="Acción:">
-                        <button class="btn btn-sm btn-primary" onclick="descargarCuenta(${c.id_cuenta})">
-                            📥 Descargar
-                        </button>
-                    </td>
-                </tr>
-            `).join('');
+    <tr>
+        <td data-label="Período:">${getNombreMes(c.mes)} ${c.anio}</td>
+        <td data-label="Horas:">${parseFloat(c.total_horas).toFixed(2)}</td>
+        <td data-label="Total:">${formatearMoneda(c.total_pagar)}</td>
+        <td data-label="Generado:">${formatearFecha(c.generado_el)}</td>
+        <td data-label="Acción:" class="action-btns">
+            <button class="btn btn-sm btn-info" onclick="verCuentaCobro(${c.id_cuenta})" title="Ver PDF">
+                👁️ Ver
+            </button>
+            <button class="btn btn-sm btn-primary" onclick="descargarCuenta(${c.id_cuenta})" title="Descargar PDF">
+                📥 Descargar
+            </button>
+        </td>
+    </tr>
+`).join('');
         }
         
     } catch (error) {
@@ -424,8 +423,14 @@ async function cargarCuentasGeneradas() {
     }
 }
 
+function verCuentaCobro(id) {
+    // Vista previa en nueva pestaña
+    window.open(`/api/docente/ver-cuenta-pdf/${id}`, '_blank');
+}
+
 function descargarCuenta(id) {
-    window.open(`/api/docente/descargar-cuenta/${id}`, '_blank');
+    // Descarga directa
+    window.location.href = `/api/docente/descargar-cuenta-pdf/${id}`;
 }
 
 // ========================================

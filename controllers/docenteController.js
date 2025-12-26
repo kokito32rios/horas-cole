@@ -417,6 +417,278 @@ const cambiarPassword = async (req, res) => {
     }
 };
 
+const PDFDocument = require('pdfkit');
+const fs = require('fs');
+const path = require('path');
+
+// ========================================
+// DESCARGAR CUENTA DE COBRO COMO PDF
+// ========================================
+const descargarCuentaPDF = async (req, res) => {
+    try {
+        const idDocente = req.session.usuario.id;
+        const { id } = req.params;
+
+        // Verificar que la cuenta pertenece al docente
+        const [cuentaRows] = await db.query(
+            `SELECT cc.*, u.nombre, u.documento, u.numero_cuenta, b.nombre AS banco, tc.nombre AS tipo_cuenta
+             FROM cuentas_cobro cc
+             JOIN usuarios u ON cc.id_docente = u.id_usuario
+             LEFT JOIN bancos b ON u.id_banco = b.id_banco
+             LEFT JOIN tipos_cuenta tc ON u.id_tipo_cuenta = tc.id_tipo_cuenta
+             WHERE cc.id_cuenta = ? AND cc.id_docente = ?`,
+            [id, idDocente]
+        );
+
+        if (cuentaRows.length === 0) {
+            return res.status(404).json({ error: 'Cuenta no encontrada o no tienes permiso' });
+        }
+
+        const cuenta = cuentaRows[0];
+
+        // Obtener registros detallados del mes
+        const [registros] = await db.query(
+            `SELECT rh.fecha, rh.horas_trabajadas, rh.tema_desarrollado, g.codigo, g.nombre AS grupo_nombre,
+                    tc.programa, tc.modulo, tc.valor_hora, (rh.horas_trabajadas * tc.valor_hora) AS subtotal
+             FROM registros_horas rh
+             JOIN grupos g ON rh.id_grupo = g.id_grupo
+             JOIN tipos_curso tc ON g.id_tipo = tc.id_tipo
+             WHERE rh.id_docente = ? AND MONTH(rh.fecha) = ? AND YEAR(rh.fecha) = ?
+             ORDER BY rh.fecha`,
+            [idDocente, cuenta.mes, cuenta.anio]
+        );
+
+        // Configurar respuesta como PDF
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="Cuenta_de_Cobro_${String(cuenta.id_cuenta).padStart(3, '0')}.pdf"`);
+
+        const doc = new PDFDocument({ size: 'A4', margin: 50 });
+        doc.pipe(res);
+
+        // Fuentes (si tienes Roboto, sino usa Helvetica)
+        const fontPath = path.join(__dirname, '../public/fonts/Roboto-Regular.ttf');
+        const fontBoldPath = path.join(__dirname, '../public/fonts/Roboto-Bold.ttf');
+
+        const regular = fs.existsSync(fontPath) ? fontPath : 'Helvetica';
+        const bold = fs.existsSync(fontBoldPath) ? fontBoldPath : 'Helvetica-Bold';
+
+        doc.font(regular);
+
+        // Fecha de expedición
+        const hoy = new Date();
+        const meses = ['', 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+        const fechaTexto = `${hoy.getDate()} de ${meses[hoy.getMonth() + 1]} de ${hoy.getFullYear()}`;
+        doc.fontSize(12).text(fechaTexto, { align: 'right' });
+        doc.moveDown(2);
+
+        // Título
+        doc.font(bold).fontSize(18).text(`CUENTA DE COBRO N° ${String(cuenta.id_cuenta).padStart(3, '0')}`, { align: 'center' });
+        doc.moveDown(2);
+
+        // Datos del colegio
+        doc.font(bold).fontSize(14).text('COLEGIATURA ANTIOQUEÑA DE BELLEZA SAS', { align: 'center' });
+        doc.font(regular).fontSize(12).text('NIT: 901.363.247-8', { align: 'center' });
+        doc.moveDown(2);
+
+        // DEBE A:
+        doc.font(bold).fontSize(12).text('DEBE A:', { align: 'center' });
+        doc.font(regular).fontSize(12).text(cuenta.nombre, { align: 'center' });
+        doc.text(`C.C. ${cuenta.documento}`, { align: 'center' });
+        doc.moveDown(2);
+
+        // Valor en números y letras
+        const valorFormateado = new Intl.NumberFormat('es-CO').format(cuenta.total_pagar);
+        const valorEnLetras = numeroALetras(cuenta.total_pagar); // Función que agregamos abajo
+
+        // LA SUMA DE: (centrado)
+        doc.font(bold).fontSize(14).text('LA SUMA DE:', { align: 'center' });
+        doc.font(regular).fontSize(16).text(`$${valorFormateado}`, { align: 'center' });
+        doc.font(regular).fontSize(12).text(`${valorEnLetras} PESOS COP`, { align: 'center' });
+        doc.moveDown(2);
+
+        // Por concepto de: (centrado)
+        const mesNombre = meses[cuenta.mes];
+        doc.font(bold).fontSize(12).text('Por concepto de:', { align: 'center' });
+        doc.font(regular).fontSize(12).text(`PRESTACIÓN DE SERVICIOS POR HORA CÁTEDRA MES DE ${mesNombre.toUpperCase()}`, { align: 'center' });
+
+        // Nota aclaratoria
+        doc.fontSize(10).text(
+            'Nota aclaratoria: Solicito la aplicación de la tabla de retención en la fuente establecida en el artículo 383 del Estatuto Tributario, la cual se le aplica a los pagos o abonos en cuenta por concepto de ingresos por honorarios y por compensación por servicios personales.',
+            { align: 'justify' }
+        );
+        doc.moveDown(4);
+
+        // Firma
+        doc.font(bold).text('ATENTAMENTE,');
+        doc.moveDown(3);
+        doc.text('___________________________');
+        doc.font(regular).text(cuenta.nombre);
+        doc.text(`C.c. ${cuenta.documento}`);
+        doc.text(`Cuenta ${cuenta.tipo_cuenta || 'ahorros'} ${cuenta.banco || ''} ${cuenta.numero_cuenta || ''}`);
+
+        doc.end();
+
+    } catch (error) {
+        console.error('Error generando PDF:', error);
+        res.status(500).json({ error: 'Error al generar el PDF' });
+    }
+};
+
+// ========================================
+// VER CUENTA DE COBRO COMO PDF (vista previa)
+// ========================================
+const verCuentaPDF = async (req, res) => {
+    try {
+        const idDocente = req.session.usuario.id;
+        const { id } = req.params;
+
+        // (Mismo código que descargarCuentaPDF hasta la parte de headers)
+        const [cuentaRows] = await db.query(
+            `SELECT cc.*, u.nombre, u.documento, u.numero_cuenta, b.nombre AS banco, tc.nombre AS tipo_cuenta
+             FROM cuentas_cobro cc
+             JOIN usuarios u ON cc.id_docente = u.id_usuario
+             LEFT JOIN bancos b ON u.id_banco = b.id_banco
+             LEFT JOIN tipos_cuenta tc ON u.id_tipo_cuenta = tc.id_tipo_cuenta
+             WHERE cc.id_cuenta = ? AND cc.id_docente = ?`,
+            [id, idDocente]
+        );
+
+        if (cuentaRows.length === 0) {
+            return res.status(404).send('Cuenta no encontrada');
+        }
+
+        const cuenta = cuentaRows[0];
+
+        const [registros] = await db.query(
+            `SELECT rh.fecha, rh.horas_trabajadas, rh.tema_desarrollado, g.codigo, g.nombre AS grupo_nombre,
+                    tc.programa, tc.modulo, tc.valor_hora, (rh.horas_trabajadas * tc.valor_hora) AS subtotal
+             FROM registros_horas rh
+             JOIN grupos g ON rh.id_grupo = g.id_grupo
+             JOIN tipos_curso tc ON g.id_tipo = tc.id_tipo
+             WHERE rh.id_docente = ? AND MONTH(rh.fecha) = ? AND YEAR(rh.fecha) = ?
+             ORDER BY rh.fecha`,
+            [idDocente, cuenta.mes, cuenta.anio]
+        );
+
+        // Headers para VISTA PREVIA (inline)
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename="Cuenta_de_Cobro_${String(cuenta.id_cuenta).padStart(3, '0')}.pdf"`);
+
+        const doc = new PDFDocument({ size: 'A4', margin: 50 });
+        doc.pipe(res);
+
+        // (El mismo código de generación del PDF que en descargarCuentaPDF)
+        const fontPath = path.join(__dirname, '../public/fonts/Roboto-Regular.ttf');
+        const fontBoldPath = path.join(__dirname, '../public/fonts/Roboto-Bold.ttf');
+
+        const regular = fs.existsSync(fontPath) ? fontPath : 'Helvetica';
+        const bold = fs.existsSync(fontBoldPath) ? fontBoldPath : 'Helvetica-Bold';
+
+        doc.font(regular);
+
+        const hoy = new Date();
+        const meses = ['', 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+        const fechaTexto = `${hoy.getDate()} de ${meses[hoy.getMonth() + 1]} de ${hoy.getFullYear()}`;
+        doc.fontSize(12).text(fechaTexto, { align: 'right' });
+        doc.moveDown(2);
+
+        doc.font(bold).fontSize(18).text(`CUENTA DE COBRO N° ${String(cuenta.id_cuenta).padStart(3, '0')}`, { align: 'center' });
+        doc.moveDown(2);
+
+        doc.font(bold).fontSize(14).text('COLEGIATURA ANTIOQUEÑA DE BELLEZA SAS', { align: 'center' });
+        doc.font(regular).fontSize(12).text('NIT: 901.363.247-8', { align: 'center' });
+        doc.moveDown(2);
+
+        // DEBE A: (centrado)
+        doc.font(bold).fontSize(12).text('DEBE A:', { align: 'center' });
+        doc.font(regular).fontSize(12).text(cuenta.nombre, { align: 'center' });
+        doc.text(`C.C. ${cuenta.documento}`, { align: 'center' });
+        doc.moveDown(2);
+
+        const valorFormateado = new Intl.NumberFormat('es-CO').format(cuenta.total_pagar);
+        const valorEnLetras = numeroALetras(cuenta.total_pagar);
+
+        // LA SUMA DE: (centrado)
+        doc.font(bold).fontSize(14).text('LA SUMA DE:', { align: 'center' });
+        doc.font(regular).fontSize(16).text(`$${valorFormateado}`, { align: 'center' });
+        doc.font(regular).fontSize(12).text(`${valorEnLetras} PESOS COP`, { align: 'center' });
+        doc.moveDown(2);
+
+        // Por concepto de: (centrado)
+        const mesNombre = meses[cuenta.mes];
+        doc.font(bold).fontSize(12).text('Por concepto de:', { align: 'center' });
+        doc.font(regular).fontSize(12).text(`PRESTACIÓN DE SERVICIOS POR HORA CÁTEDRA MES DE ${mesNombre.toUpperCase()}`, { align: 'center' });
+
+        doc.fontSize(10).text(
+            'Nota aclaratoria: Solicito la aplicación de la tabla de retención en la fuente establecida en el artículo 383 del Estatuto Tributario, la cual se le aplica a los pagos o abonos en cuenta por concepto de ingresos por honorarios y por compensación por servicios personales.',
+            { align: 'justify' }
+        );
+        doc.moveDown(4);
+
+        doc.font(bold).text('ATENTAMENTE,');
+        doc.moveDown(3);
+        doc.text('___________________________');
+        doc.font(regular).text(cuenta.nombre);
+        doc.text(`C.c. ${cuenta.documento}`);
+        doc.text(`Cuenta ${cuenta.tipo_cuenta || 'ahorros'} ${cuenta.banco || ''} ${cuenta.numero_cuenta || ''}`);
+
+        doc.end();
+
+    } catch (error) {
+        console.error('Error generando vista previa PDF:', error);
+        res.status(500).send('Error al generar el PDF');
+    }
+};
+
+// Función para convertir número a letras (español colombiano)
+// Función corregida: número a letras en español colombiano
+function numeroALetras(num) {
+    if (num === 0) return 'CERO';
+
+    const unidades = ['', 'UN', 'DOS', 'TRES', 'CUATRO', 'CINCO', 'SEIS', 'SIETE', 'OCHO', 'NUEVE'];
+    const especiales = ['', 'ONCE', 'DOCE', 'TRECE', 'CATORCE', 'QUINCE', 'DIECISEIS', 'DIECISIETE', 'DIECIOCHO', 'DIECINUEVE'];
+    const decenas = ['', 'DIEZ', 'VEINTE', 'TREINTA', 'CUARENTA', 'CINCUENTA', 'SESENTA', 'SETENTA', 'OCHENTA', 'NOVENTA'];
+    const centenas = ['', 'CIENTO', 'DOSCIENTOS', 'TRESCIENTOS', 'CUATROCIENTOS', 'QUINIENTOS', 'SEISCIENTOS', 'SETECIENTOS', 'OCHOCIENTOS', 'NOVECIENTOS'];
+
+    function convertirMenor1000(n) {
+        if (n === 100) return 'CIEN';
+        if (n < 10) return unidades[n];
+        if (n < 20) return especiales[n - 10];
+        if (n < 100) {
+            const dec = Math.floor(n / 10);
+            const uni = n % 10;
+            return decenas[dec] + (uni > 0 ? ' Y ' + unidades[uni] : '');
+        }
+        const cen = Math.floor(n / 100);
+        const resto = n % 100;
+        return centenas[cen] + (resto > 0 ? ' ' + convertirMenor1000(resto) : '');
+    }
+
+    let texto = '';
+    const millones = Math.floor(num / 1000000);
+    const miles = Math.floor((num % 1000000) / 1000);
+    const cientos = num % 1000;
+
+    if (millones > 0) {
+        texto += (millones === 1 ? 'UN MILLÓN' : convertirMenor1000(millones) + ' MILLONES') + ' ';
+    }
+
+    if (miles > 0) {
+        texto += (miles === 1 ? 'MIL' : convertirMenor1000(miles) + ' MIL') + ' ';
+    }
+
+    if (cientos > 0) {
+        texto += convertirMenor1000(cientos);
+    }
+
+    return texto.trim();
+}
+
+module.exports = {
+    // ... tus funciones anteriores
+    descargarCuentaPDF  // ← Agrega esta
+};
+
 module.exports = {
     obtenerEstadisticas,
     obtenerMisGrupos,
@@ -426,5 +698,7 @@ module.exports = {
     obtenerCuentasGeneradas,
     descargarCuenta,
     obtenerMiPerfil,
-    cambiarPassword
+    cambiarPassword,
+    descargarCuentaPDF,
+    verCuentaPDF
 };
