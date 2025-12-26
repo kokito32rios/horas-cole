@@ -712,10 +712,416 @@ function numeroALetras(num) {
     return texto.trim();
 }
 
-module.exports = {
-    // ... tus funciones anteriores
-    descargarCuentaPDF  // ← Agrega esta
+const ExcelJS = require('exceljs');
+
+// ========================================
+// GENERAR PLANEADOR EXCEL
+// ========================================
+const generarPlaneadorExcel = async (req, res) => {
+    try {
+        const idDocente = req.session.usuario.id;
+        const { mes, anio, id_grupo } = req.params;
+
+        // Validar mes y año
+        const mesNum = parseInt(mes);
+        const anioNum = parseInt(anio);
+        if (isNaN(mesNum) || isNaN(anioNum) || mesNum < 1 || mesNum > 12) {
+            return res.status(400).send('Mes o año inválido');
+        }
+
+        // Obtener datos del docente
+        const [docenteRows] = await db.query(
+            `SELECT u.nombre, u.documento 
+             FROM usuarios u 
+             WHERE u.id_usuario = ?`,
+            [idDocente]
+        );
+        const docente = docenteRows[0];
+
+        // Determinar si es para todos los grupos o uno específico
+        const esTodos = id_grupo === undefined || id_grupo === 'todos';
+
+        let gruposQuery;
+        let params = [idDocente];
+        if (esTodos) {
+            gruposQuery = `
+                SELECT DISTINCT g.id_grupo, g.codigo, g.nombre AS grupo_nombre, tc.programa, tc.modulo
+                FROM grupos g
+                JOIN tipos_curso tc ON g.id_tipo = tc.id_tipo
+                WHERE g.id_docente = ? AND g.activo = 1`;
+        } else {
+            gruposQuery = `
+                SELECT g.id_grupo, g.codigo, g.nombre AS grupo_nombre, tc.programa, tc.modulo
+                FROM grupos g
+                JOIN tipos_curso tc ON g.id_tipo = tc.id_tipo
+                WHERE g.id_grupo = ? AND g.id_docente = ? AND g.activo = 1`;
+            params = [parseInt(id_grupo), idDocente];
+        }
+
+        const [grupos] = await db.query(gruposQuery, params);
+
+        if (grupos.length === 0) {
+            return res.status(404).send('No hay grupos activos o datos para este período');
+        }
+
+        // Crear workbook
+        const workbook = new ExcelJS.Workbook();
+        workbook.creator = 'Sistema Registro Horas';
+        workbook.created = new Date();
+
+        // Meses en letra
+        const mesesLetra = ['', 'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 
+                            'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
+
+        for (const grupo of grupos) {
+            // Obtener registros del grupo en el mes
+            const [registros] = await db.query(
+                `SELECT rh.fecha, rh.hora_ingreso, rh.hora_salida, rh.horas_trabajadas,
+                        rh.tema_desarrollado, rh.observaciones
+                 FROM registros_horas rh
+                 WHERE rh.id_docente = ? AND rh.id_grupo = ? 
+                 AND MONTH(rh.fecha) = ? AND YEAR(rh.fecha) = ?
+                 ORDER BY rh.fecha`,
+                [idDocente, grupo.id_grupo, mesNum, anioNum]
+            );
+
+            // Crear hoja por grupo
+            const sheet = workbook.addWorksheet(grupo.codigo || 'Grupo');
+
+            // Configuración de columnas
+            sheet.columns = [
+                { header: '', key: 'a', width: 15 },
+                { header: '', key: 'b', width: 20 },
+                { header: '', key: 'c', width: 20 },
+                { header: '', key: 'd', width: 15 },
+                { header: '', key: 'e', width: 50 },
+                { header: '', key: 'f', width: 40 }
+            ];
+
+            // Encabezado fijo
+            sheet.mergeCells('B1:F1');
+            sheet.getCell('B1').value = 'COLEGIATURA ANTIOQUEÑA DE BELLEZA';
+            sheet.getCell('B1').font = { bold: true, size: 14 };
+            sheet.getCell('F1').value = 'PROCESO GESTION ACADEMICA';
+            sheet.getCell('F1').font = { bold: true };
+
+            sheet.mergeCells('B2:F2');
+            sheet.getCell('B2').value = 'DIARIO DE CAMPO DOCENTE';
+            sheet.getCell('B2').font = { bold: true, size: 16 };
+            sheet.getCell('B2').alignment = { horizontal: 'center' };
+
+            sheet.getCell('B3').value = 'CODIGO: MGA-F-30';
+            sheet.getCell('C3').value = 'VERSIÓN: 1';
+            sheet.getCell('E3').value = 'FECHA: 29/11/2024';
+
+            sheet.getCell('B4').value = 'NOMBRE DEL DOCENTE:';
+            sheet.mergeCells('D4:F4');
+            sheet.getCell('D4').value = docente.nombre.toUpperCase();
+
+            sheet.getCell('B5').value = 'PROGRAMA';
+            sheet.mergeCells('D5:F5');
+            sheet.getCell('D5').value = grupo.programa || '';
+
+            sheet.getCell('B6').value = 'MÓDULO';
+            sheet.mergeCells('D6:D6');
+            sheet.getCell('D6').value = grupo.modulo || '';
+            sheet.getCell('E6').value = 'GRUPO / JORNADA';
+            sheet.getCell('F6').value = grupo.grupo_nombre || '';
+
+            // Encabezados tabla
+            const headerRow = sheet.getRow(7);
+            headerRow.values = ['', 'FECHA', 'HORA ENTRADA', 'HORA SALIDA', 'Q HORAS', 'TEMA DESARROLLADO EN CLASE', 'OBSERVACIONES'];
+            headerRow.font = { bold: true };
+
+            // Agregar bordes a encabezados
+            headerRow.eachCell((cell) => {
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
+            });
+
+            // Datos registros
+            let totalHorasMes = 0;
+            registros.forEach((r, index) => {
+                const row = sheet.getRow(8 + index);
+                row.values = [
+                    '',
+                    new Date(r.fecha).toLocaleDateString('es-CO'),
+                    r.hora_ingreso,
+                    r.hora_salida || '',
+                    parseFloat(r.horas_trabajadas).toFixed(2),
+                    r.tema_desarrollado || '',
+                    r.observaciones || ''
+                ];
+
+                // Agregar bordes a datos
+                row.eachCell((cell) => {
+                    cell.border = {
+                        top: { style: 'thin' },
+                        left: { style: 'thin' },
+                        bottom: { style: 'thin' },
+                        right: { style: 'thin' }
+                    };
+                });
+
+                totalHorasMes += parseFloat(r.horas_trabajadas);
+            });
+
+            // Totales con bordes
+            const totalRowIndex = 8 + registros.length + 1;
+            const totalRow = sheet.getRow(totalRowIndex);
+            totalRow.getCell('A').value = 'TOTAL HORAS SEMANA: 4 HORAS';
+            sheet.mergeCells(`C${totalRowIndex}:D${totalRowIndex}`);
+            totalRow.getCell('C').value = 'TOTAL MES';
+            totalRow.getCell('D').value = totalHorasMes.toFixed(2);
+
+            totalRow.eachCell((cell, colNumber) => {
+                if (colNumber >= 1 && colNumber <= 6) {
+                    cell.border = {
+                        top: { style: 'thin' },
+                        left: { style: 'thin' },
+                        bottom: { style: 'thin' },
+                        right: { style: 'thin' }
+                    };
+                }
+            });
+
+            // Pie sin bordes
+            const pieRow1 = totalRowIndex + 1;
+            sheet.getCell(`A${pieRow1}`).value = 'Revisado por:';
+
+            const pieRow2 = pieRow1 + 1;
+            sheet.getCell(`A${pieRow2}`).value = 'Fecha de Revisión:';
+            sheet.mergeCells(`E${pieRow2}:F${pieRow2}`);
+            sheet.getCell(`E${pieRow2}`).value = 'Fecha de Aprobación y Autorización:';
+        }
+
+        // Nombre del archivo
+        const nombreDocente = docente.nombre.trim().toUpperCase().replace(/[^A-Z\s]/g, '');
+        const mesNombre = mesesLetra[mesNum];
+        const sufijoGrupo = esTodos ? 'TODOS GRUPOS' : grupos[0].codigo.replace(/\s/g, '_');
+        const nombreArchivo = `PLANEADOR ${mesNombre} - ${sufijoGrupo} - ${nombreDocente}.xlsx`;
+
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename="${nombreArchivo}"`);
+
+        await workbook.xlsx.write(res);
+        res.end();
+
+    } catch (error) {
+        console.error('Error generando planeador Excel:', error);
+        res.status(500).send('Error al generar el planeador');
+    }
 };
+
+// ========================================
+// VER PLANEADOR EXCEL (vista previa en navegador)
+// ========================================
+const verPlaneadorExcel = async (req, res) => {
+    try {
+        const idDocente = req.session.usuario.id;
+        const { mes, anio, id_grupo } = req.params;
+
+        // Validar mes y año
+        const mesNum = parseInt(mes);
+        const anioNum = parseInt(anio);
+        if (isNaN(mesNum) || isNaN(anioNum) || mesNum < 1 || mesNum > 12) {
+            return res.status(400).send('Mes o año inválido');
+        }
+
+        // Obtener datos del docente
+        const [docenteRows] = await db.query(
+            `SELECT u.nombre, u.documento 
+             FROM usuarios u 
+             WHERE u.id_usuario = ?`,
+            [idDocente]
+        );
+        const docente = docenteRows[0];
+
+        // Determinar si es para todos los grupos o uno específico
+        const esTodos = id_grupo === undefined || id_grupo === 'todos';
+
+        let gruposQuery;
+        let params = [idDocente];
+        if (esTodos) {
+            gruposQuery = `
+                SELECT DISTINCT g.id_grupo, g.codigo, g.nombre AS grupo_nombre, tc.programa, tc.modulo
+                FROM grupos g
+                JOIN tipos_curso tc ON g.id_tipo = tc.id_tipo
+                WHERE g.id_docente = ? AND g.activo = 1`;
+        } else {
+            gruposQuery = `
+                SELECT g.id_grupo, g.codigo, g.nombre AS grupo_nombre, tc.programa, tc.modulo
+                FROM grupos g
+                JOIN tipos_curso tc ON g.id_tipo = tc.id_tipo
+                WHERE g.id_grupo = ? AND g.id_docente = ? AND g.activo = 1`;
+            params = [parseInt(id_grupo), idDocente];
+        }
+
+        const [grupos] = await db.query(gruposQuery, params);
+
+        if (grupos.length === 0) {
+            return res.status(404).send('No hay grupos activos o datos para este período');
+        }
+
+        // Crear workbook
+        const workbook = new ExcelJS.Workbook();
+        workbook.creator = 'Sistema Registro Horas';
+        workbook.created = new Date();
+
+        // Meses en letra
+        const mesesLetra = ['', 'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 
+                            'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
+
+        for (const grupo of grupos) {
+            // Obtener registros del grupo en el mes
+            const [registros] = await db.query(
+                `SELECT rh.fecha, rh.hora_ingreso, rh.hora_salida, rh.horas_trabajadas,
+                        rh.tema_desarrollado, rh.observaciones
+                 FROM registros_horas rh
+                 WHERE rh.id_docente = ? AND rh.id_grupo = ? 
+                 AND MONTH(rh.fecha) = ? AND YEAR(rh.fecha) = ?
+                 ORDER BY rh.fecha`,
+                [idDocente, grupo.id_grupo, mesNum, anioNum]
+            );
+
+            // Crear hoja por grupo
+            const sheet = workbook.addWorksheet(grupo.codigo || 'Grupo');
+
+            // Configuración de columnas
+            sheet.columns = [
+                { header: '', key: 'a', width: 15 },
+                { header: '', key: 'b', width: 20 },
+                { header: '', key: 'c', width: 20 },
+                { header: '', key: 'd', width: 15 },
+                { header: '', key: 'e', width: 50 },
+                { header: '', key: 'f', width: 40 }
+            ];
+
+            // Encabezado fijo
+            sheet.mergeCells('B1:F1');
+            sheet.getCell('B1').value = 'COLEGIATURA ANTIOQUEÑA DE BELLEZA';
+            sheet.getCell('B1').font = { bold: true, size: 14 };
+            sheet.getCell('F1').value = 'PROCESO GESTION ACADEMICA';
+            sheet.getCell('F1').font = { bold: true };
+
+            sheet.mergeCells('B2:F2');
+            sheet.getCell('B2').value = 'DIARIO DE CAMPO DOCENTE';
+            sheet.getCell('B2').font = { bold: true, size: 16 };
+            sheet.getCell('B2').alignment = { horizontal: 'center' };
+
+            sheet.getCell('B3').value = 'CODIGO: MGA-F-30';
+            sheet.getCell('C3').value = 'VERSIÓN: 1';
+            sheet.getCell('E3').value = 'FECHA: 29/11/2024';
+
+            sheet.getCell('B4').value = 'NOMBRE DEL DOCENTE:';
+            sheet.mergeCells('D4:F4');
+            sheet.getCell('D4').value = docente.nombre.toUpperCase();
+
+            sheet.getCell('B5').value = 'PROGRAMA';
+            sheet.mergeCells('D5:F5');
+            sheet.getCell('D5').value = grupo.programa || '';
+
+            sheet.getCell('B6').value = 'MÓDULO';
+            sheet.mergeCells('D6:D6');
+            sheet.getCell('D6').value = grupo.modulo || '';
+            sheet.getCell('E6').value = 'GRUPO / JORNADA';
+            sheet.getCell('F6').value = grupo.grupo_nombre || '';
+
+            // Encabezados tabla
+            const headerRow = sheet.getRow(7);
+            headerRow.values = ['', 'FECHA', 'HORA ENTRADA', 'HORA SALIDA', 'Q HORAS', 'TEMA DESARROLLADO EN CLASE', 'OBSERVACIONES'];
+            headerRow.font = { bold: true };
+
+            // Bordes en encabezados
+            headerRow.eachCell((cell) => {
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
+            });
+
+            // Datos registros
+            let totalHorasMes = 0;
+            registros.forEach((r, index) => {
+                const row = sheet.getRow(8 + index);
+                row.values = [
+                    '',
+                    new Date(r.fecha).toLocaleDateString('es-CO'),
+                    r.hora_ingreso,
+                    r.hora_salida || '',
+                    parseFloat(r.horas_trabajadas).toFixed(2),
+                    r.tema_desarrollado || '',
+                    r.observaciones || ''
+                ];
+
+                // Bordes en cada celda de datos
+                row.eachCell((cell) => {
+                    cell.border = {
+                        top: { style: 'thin' },
+                        left: { style: 'thin' },
+                        bottom: { style: 'thin' },
+                        right: { style: 'thin' }
+                    };
+                });
+
+                totalHorasMes += parseFloat(r.horas_trabajadas);
+            });
+
+            // Totales con bordes
+            const totalRowIndex = 8 + registros.length + 1;
+            const totalRow = sheet.getRow(totalRowIndex);
+            totalRow.getCell('A').value = 'TOTAL HORAS SEMANA: 4 HORAS'; // Fijo como en modelo
+            sheet.mergeCells(`C${totalRowIndex}:D${totalRowIndex}`);
+            totalRow.getCell('C').value = 'TOTAL MES';
+            totalRow.getCell('D').value = totalHorasMes.toFixed(2);
+
+            totalRow.eachCell((cell, colNumber) => {
+                if (colNumber >= 1 && colNumber <= 6) {
+                    cell.border = {
+                        top: { style: 'thin' },
+                        left: { style: 'thin' },
+                        bottom: { style: 'thin' },
+                        right: { style: 'thin' }
+                    };
+                }
+            });
+
+            // Pie sin bordes
+            const pieRow1 = totalRowIndex + 1;
+            sheet.getCell(`A${pieRow1}`).value = 'Revisado por:';
+
+            const pieRow2 = pieRow1 + 1;
+            sheet.getCell(`A${pieRow2}`).value = 'Fecha de Revisión:';
+            sheet.mergeCells(`E${pieRow2}:F${pieRow2}`);
+            sheet.getCell(`E${pieRow2}`).value = 'Fecha de Aprobación y Autorización:';
+        }
+
+        // Nombre del archivo
+        const nombreDocente = docente.nombre.trim().toUpperCase().replace(/[^A-Z\s]/g, '');
+        const mesNombre = mesesLetra[mesNum];
+        const sufijoGrupo = esTodos ? 'TODOS GRUPOS' : grupos[0].codigo.replace(/\s/g, '_');
+        const nombreArchivo = `PLANEADOR ${mesNombre} - ${sufijoGrupo} - ${nombreDocente}.xlsx`;
+
+        // VISTA PREVIA: inline
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `inline; filename="${nombreArchivo}"`);
+
+        await workbook.xlsx.write(res);
+        res.end();
+
+    } catch (error) {
+        console.error('Error generando vista previa planeador:', error);
+        res.status(500).send('Error al generar el planeador');
+    }
+};
+
+
 
 module.exports = {
     obtenerEstadisticas,
@@ -728,5 +1134,7 @@ module.exports = {
     obtenerMiPerfil,
     cambiarPassword,
     descargarCuentaPDF,
-    verCuentaPDF
+    verCuentaPDF,
+    generarPlaneadorExcel,
+    verPlaneadorExcel
 };

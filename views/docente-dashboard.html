@@ -52,6 +52,7 @@
       <button class="nav-btn" data-tab="registrar">⏰ Registrar Horas</button>
       <button class="nav-btn" data-tab="historial">📝 Mi Historial</button>
       <button class="nav-btn" data-tab="cuentas">📄 Cuentas de Cobro</button>
+      <button class="nav-btn" data-tab="planeadores">📊 Planeadores</button>
       <button class="nav-btn" data-tab="perfil">👤 Mi Perfil</button>
     </nav>
 
@@ -359,6 +360,105 @@
           </div>
         </div>
       </section>
+
+      <!-- TAB: PLANEADORES -->
+      <section id="tab-planeadores" class="tab-content">
+        <h2 class="tab-title">📊 Planeadores Mensuales por Grupo</h2>
+
+        <div class="generar-planeador-container">
+          <div class="planeador-form">
+            <h3>Generar Planeador Excel</h3>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Mes *</label>
+                <select id="planeadorMes" required>
+                  <option value="">Seleccionar...</option>
+                  <option value="1">Enero</option>
+                  <option value="2">Febrero</option>
+                  <option value="3">Marzo</option>
+                  <option value="4">Abril</option>
+                  <option value="5">Mayo</option>
+                  <option value="6">Junio</option>
+                  <option value="7">Julio</option>
+                  <option value="8">Agosto</option>
+                  <option value="9">Septiembre</option>
+                  <option value="10">Octubre</option>
+                  <option value="11">Noviembre</option>
+                  <option value="12">Diciembre</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Año *</label>
+                <select id="planeadorAnio" required>
+                  <!-- Se llena automáticamente con JS -->
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Grupo</label>
+                <select id="planeadorGrupo">
+                  <option value="todos">Todos los grupos</option>
+                  <!-- Los grupos se cargan con JS -->
+                </select>
+              </div>
+
+              <div
+                class="form-group action-btns"
+                style="display: flex; gap: 1rem; align-items: end"
+              >
+                <button class="btn btn-info" onclick="verPlaneadorExcel()">
+                  👁️ Ver Planeador
+                </button>
+                <button
+                  class="btn btn-primary"
+                  onclick="generarPlaneadorExcel()"
+                >
+                  📥 Descargar Excel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="info-card" style="margin-top: 2rem">
+          <p>
+            Selecciona el mes, año y grupo (o "Todos los grupos") para generar
+            el planeador.<br />
+            • <strong>Ver Planeador</strong>: abre una vista previa en el
+            navegador.<br />
+            • <strong>Descargar Excel</strong>: guarda el archivo en tu
+            computadora.
+          </p>
+        </div>
+
+                <!-- MODAL: Vista Previa Planeador -->
+        <div id="modalPlaneadorPreview" class="modal">
+          <div class="modal-content modal-large">
+            <span class="close-modal" onclick="cerrarModalPlaneador()">&times;</span>
+            <h2>Vista Previa del Planeador</h2>
+            
+            <div class="table-container" style="max-height: 70vh; overflow-y: auto;">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Hora Entrada</th>
+                    <th>Hora Salida</th>
+                    <th>Q Horas</th>
+                    <th>Tema Desarrollado en Clase</th>
+                    <th>Observaciones</th>
+                  </tr>
+                </thead>
+                <tbody id="tablaPreviewPlaneador">
+                  <tr>
+                    <td colspan="6" class="text-center">Selecciona mes, año y grupo para ver la vista previa</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
 
       <!-- TAB: MI PERFIL -->
       <section id="tab-perfil" class="tab-content">

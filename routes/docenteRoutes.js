@@ -26,6 +26,14 @@ router.get('/descargar-cuenta-pdf/:id', docenteController.descargarCuentaPDF);
 router.get('/ver-cuenta-pdf/:id', docenteController.verCuentaPDF);
 // router.get('/descargar-cuenta/:id', docenteController.descargarCuenta);
 
+// Planeadores
+router.get('/generar-planeador/:mes/:anio', docenteController.generarPlaneadorExcel);
+router.get('/generar-planeador/:mes/:anio/:id_grupo', docenteController.generarPlaneadorExcel);
+
+// Vista previa del planeador
+router.get('/ver-planeador/:mes/:anio', docenteController.verPlaneadorExcel);
+router.get('/ver-planeador/:mes/:anio/:id_grupo', docenteController.verPlaneadorExcel);
+
 
 // Perfil
 router.get('/mi-perfil', docenteController.obtenerMiPerfil);

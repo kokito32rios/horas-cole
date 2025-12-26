@@ -78,8 +78,12 @@ function cambiarTabDocente(tabName) {
         cargarHistorial();
     } else if (tabName === 'cuentas') {
         cargarCuentasGeneradas();
+        
     } else if (tabName === 'perfil') {
         cargarMiPerfil();
+    } else if (tabName === 'planeadores') {
+        llenarAniosPlaneador();
+        cargarGruposPlaneador();
     }
 }
 
@@ -576,3 +580,109 @@ document.addEventListener('click', (e) => {
         e.target.classList.remove('show');
     }
 });
+
+// ========================================
+// PLANEADORES
+// ========================================
+function llenarAniosPlaneador() {
+    const select = document.getElementById('planeadorAnio');
+    const anioActual = new Date().getFullYear();
+    
+    select.innerHTML = '';
+    for (let i = anioActual; i >= anioActual - 5; i--) {
+        select.innerHTML += `<option value="${i}">${i}</option>`;
+    }
+    
+    select.value = anioActual;
+}
+
+async function cargarGruposPlaneador() {
+    try {
+        const response = await fetch('/api/docente/mis-grupos');
+        const data = await response.json();
+        
+        if (data.success) {
+            const select = document.getElementById('planeadorGrupo');
+            select.innerHTML = '<option value="todos">Todos los grupos</option>' +
+                data.grupos.filter(g => g.activo).map(g => 
+                    `<option value="${g.id_grupo}">${g.codigo} - ${g.nombre}</option>`
+                ).join('');
+        }
+    } catch (error) {
+        console.error('Error cargando grupos para planeador:', error);
+    }
+}
+
+async function generarPlaneadorExcel() {
+    const mes = document.getElementById('planeadorMes').value;
+    const anio = document.getElementById('planeadorAnio').value;
+    const grupo = document.getElementById('planeadorGrupo').value;
+
+    if (!mes || !anio) {
+        mostrarNotificacion('Selecciona mes y año', 'error');
+        return;
+    }
+
+    let url = `/api/docente/generar-planeador/${mes}/${anio}`;
+    if (grupo !== 'todos') {
+        url += `/${grupo}`;
+    }
+
+    window.location.href = url;
+}
+
+// Llamar al cargar la pestaña
+// (agregar en configurarNavegacion cuando tabName === 'planeadores')
+
+async function verPlaneadorExcel() {
+    const mes = document.getElementById('planeadorMes').value;
+    const anio = document.getElementById('planeadorAnio').value;
+    const grupoId = document.getElementById('planeadorGrupo').value;
+
+    if (!mes || !anio) {
+        mostrarNotificacion('Selecciona mes y año', 'error');
+        return;
+    }
+
+    try {
+        let url = '/api/docente/historial';
+        const params = new URLSearchParams();
+        params.append('desde', `${anio}-${mes.padStart(2, '0')}-01`);
+        params.append('hasta', `${anio}-${mes.padStart(2, '0')}-31`);
+        if (grupoId && grupoId !== 'todos') {
+            params.append('grupo', grupoId);
+        }
+        url += '?' + params.toString();
+
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (!data.success || data.registros.length === 0) {
+            document.getElementById('tablaPreviewPlaneador').innerHTML = '<tr><td colspan="6" class="text-center">No hay registros para este período</td></tr>';
+            document.getElementById('modalPlaneadorPreview').classList.add('show');
+            return;
+        }
+
+        const tbody = document.getElementById('tablaPreviewPlaneador');
+        tbody.innerHTML = data.registros.map(r => `
+            <tr>
+                <td>${formatearFecha(r.fecha)}</td>
+                <td>${r.hora_ingreso}</td>
+                <td>${r.hora_salida || '—'}</td>
+                <td>${parseFloat(r.horas_trabajadas).toFixed(2)}</td>
+                <td>${r.tema_desarrollado || '-'}</td>
+                <td>${r.observaciones || '-'}</td>
+            </tr>
+        `).join('');
+
+        document.getElementById('modalPlaneadorPreview').classList.add('show');
+
+    } catch (error) {
+        console.error('Error cargando vista previa:', error);
+        mostrarNotificacion('Error al cargar la vista previa', 'error');
+    }
+}
+
+function cerrarModalPlaneador() {
+    document.getElementById('modalPlaneadorPreview').classList.remove('show');
+}
