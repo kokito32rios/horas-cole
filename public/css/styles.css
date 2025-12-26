@@ -1855,3 +1855,97 @@ body {
         font-size: 1.2rem;
     }
 }
+
+/* Mejora estética de filtros en Cuentas de Cobro */
+#tab-cuentas-cobro .filtros-container .form-row {
+    align-items: end;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+#tab-cuentas-cobro .filtros-container .form-group {
+    flex: 1;
+    min-width: 180px;
+}
+
+#tab-cuentas-cobro .filtros-container>div:last-child {
+    display: flex;
+    gap: 0.8rem;
+    align-self: flex-end;
+}
+
+/* Botones de filtro más compactos y alineados */
+#tab-cuentas-cobro #btnFiltrarCuentas,
+#tab-cuentas-cobro #btnLimpiarCuentas {
+    padding: 0.8rem 1.2rem;
+    font-size: 0.95rem;
+    white-space: nowrap;
+    height: fit-content;
+    align-self: flex-end;
+}
+
+/* En móviles: apilar solo si es necesario, pero mantenerlos juntos */
+@media (max-width: 768px) {
+    #tab-cuentas-cobro .filtros-container .form-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    #tab-cuentas-cobro .filtros-container>div:last-child {
+        flex-direction: row;
+        justify-content: flex-end;
+    }
+
+    #tab-cuentas-cobro #btnFiltrarCuentas,
+    #tab-cuentas-cobro #btnLimpiarCuentas {
+        flex: 1;
+        max-width: 200px;
+    }
+}
+
+/* Mejora estética de filtros en Histórico de Horas */
+#tab-historico .filtros-container .form-row {
+    align-items: end;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+#tab-historico .filtros-container .form-group {
+    flex: 1;
+    min-width: 180px;
+}
+
+#tab-historico .filtros-container>div:last-child {
+    display: flex;
+    gap: 0.8rem;
+    align-self: flex-end;
+}
+
+/* Botones más compactos y alineados */
+#tab-historico #btnFiltrarHistorico,
+#tab-historico #btnLimpiarFiltros {
+    padding: 0.8rem 1.2rem;
+    font-size: 0.95rem;
+    white-space: nowrap;
+    height: fit-content;
+}
+
+/* En móviles: inputs apilados, botones juntos al final */
+@media (max-width: 768px) {
+    #tab-historico .filtros-container .form-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    #tab-historico .filtros-container>div:last-child {
+        flex-direction: row;
+        justify-content: flex-end;
+        gap: 0.8rem;
+    }
+
+    #tab-historico #btnFiltrarHistorico,
+    #tab-historico #btnLimpiarFiltros {
+        flex: 1;
+        max-width: 200px;
+    }
+}

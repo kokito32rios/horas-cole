@@ -75,6 +75,7 @@ const obtenerMisGrupos = async (req, res) => {
                 g.nombre,
                 g.activo,
                 tc.modulo as tipo_curso,
+                tc.programa,          -- NUEVO: agregamos el programa
                 tc.valor_hora
              FROM grupos g
              INNER JOIN tipos_curso tc ON g.id_tipo = tc.id_tipo
@@ -97,11 +98,15 @@ const obtenerMisGrupos = async (req, res) => {
 const registrarHora = async (req, res) => {
     try {
         const idDocente = req.session.usuario.id;
-        const { fecha, id_grupo, hora_ingreso, hora_salida, observaciones } = req.body;
+        const { fecha, id_grupo, hora_ingreso, hora_salida, observaciones, tema_desarrollado } = req.body;
         
         // Validaciones
         if (!fecha || !id_grupo || !hora_ingreso || !hora_salida) {
             return res.status(400).json({ error: 'Faltan datos obligatorios' });
+        }
+        
+        if (!tema_desarrollado || tema_desarrollado.trim() === '') {
+            return res.status(400).json({ error: 'El tema desarrollado es obligatorio' });
         }
         
         // Verificar que el grupo pertenece al docente
@@ -133,9 +138,10 @@ const registrarHora = async (req, res) => {
             // Actualizar registro existente
             await db.query(
                 `UPDATE registros_horas 
-                 SET hora_ingreso = ?, hora_salida = ?, horas_trabajadas = ?, observaciones = ?
+                 SET hora_ingreso = ?, hora_salida = ?, horas_trabajadas = ?, 
+                     observaciones = ?, tema_desarrollado = ?
                  WHERE id_registro = ?`,
-                [hora_ingreso, hora_salida, horas_trabajadas, observaciones, existente[0].id_registro]
+                [hora_ingreso, hora_salida, horas_trabajadas, observaciones, tema_desarrollado, existente[0].id_registro]
             );
             
             return res.json({ 
@@ -147,9 +153,9 @@ const registrarHora = async (req, res) => {
         // Insertar nuevo registro
         await db.query(
             `INSERT INTO registros_horas 
-             (id_docente, id_grupo, fecha, hora_ingreso, hora_salida, horas_trabajadas, observaciones) 
-             VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [idDocente, id_grupo, fecha, hora_ingreso, hora_salida, horas_trabajadas, observaciones]
+             (id_docente, id_grupo, fecha, hora_ingreso, hora_salida, horas_trabajadas, observaciones, tema_desarrollado) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [idDocente, id_grupo, fecha, hora_ingreso, hora_salida, horas_trabajadas, observaciones, tema_desarrollado]
         );
         
         res.json({ 
@@ -162,7 +168,6 @@ const registrarHora = async (req, res) => {
         res.status(500).json({ error: 'Error al registrar hora' });
     }
 };
-
 // ========================================
 // HISTORIAL DE HORAS
 // ========================================
@@ -178,8 +183,11 @@ const obtenerHistorial = async (req, res) => {
                 rh.hora_salida,
                 rh.horas_trabajadas,
                 rh.observaciones,
+                rh.tema_desarrollado,
                 g.codigo,
                 g.nombre as nombre_grupo,
+                tc.programa,
+                tc.modulo,
                 tc.valor_hora,
                 (rh.horas_trabajadas * tc.valor_hora) as valor
             FROM registros_horas rh

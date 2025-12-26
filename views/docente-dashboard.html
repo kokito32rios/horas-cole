@@ -160,6 +160,29 @@
               </div>
             </div>
 
+            <!-- Programa y Módulo (se llenan automáticamente) -->
+            <div class="form-row">
+              <div class="form-group">
+                <label>Programa</label>
+                <input
+                  type="text"
+                  id="registroPrograma"
+                  readonly
+                  placeholder="Se carga automáticamente"
+                />
+              </div>
+
+              <div class="form-group">
+                <label>Módulo</label>
+                <input
+                  type="text"
+                  id="registroModulo"
+                  readonly
+                  placeholder="Se carga automáticamente"
+                />
+              </div>
+            </div>
+
             <div class="form-row">
               <div class="form-group">
                 <label>Hora de Ingreso *</label>
@@ -173,11 +196,21 @@
             </div>
 
             <div class="form-group">
+              <label>Tema Desarrollado *</label>
+              <textarea
+                id="registroTema"
+                rows="3"
+                placeholder="Describe el tema o contenido trabajado en la clase..."
+                required
+              ></textarea>
+            </div>
+
+            <div class="form-group">
               <label>Observaciones (opcional)</label>
               <textarea
                 id="registroObservaciones"
                 rows="3"
-                placeholder="Ej: Tema visto, novedades..."
+                placeholder="Ej: novedades, retrasos, etc."
               ></textarea>
             </div>
 
@@ -231,6 +264,9 @@
               <tr>
                 <th>Fecha</th>
                 <th>Grupo</th>
+                <th>Programa</th>
+                <th>Módulo</th>
+                <th>Tema Desarrollado</th>
                 <th>Ingreso</th>
                 <th>Salida</th>
                 <th>Horas</th>
@@ -240,12 +276,12 @@
             </thead>
             <tbody id="tablaHistorial">
               <tr>
-                <td colspan="7" class="text-center">Cargando...</td>
+                <td colspan="10" class="text-center">Cargando...</td>
               </tr>
             </tbody>
             <tfoot id="totalHistorial" style="display: none">
               <tr>
-                <td colspan="4" style="text-align: right">
+                <td colspan="7" style="text-align: right">
                   <strong>TOTAL:</strong>
                 </td>
                 <td><strong id="totalHoras">0.00</strong></td>

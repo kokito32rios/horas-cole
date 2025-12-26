@@ -606,16 +606,26 @@ function editarGrupo(id) {
     abrirModalGrupo(id);
 }
 
-document.getElementById('formGrupo').addEventListener('submit', async (e) => {
+document.getElementById('formGrupo')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     
-    const id = document.getElementById('grupoId').value;
+    const id = document.getElementById('grupoId')?.value || '';
+    const codigo = document.getElementById('grupoCodigo')?.value.trim();
+    const nombre = document.getElementById('grupoNombre')?.value.trim();
+    const tipo = document.getElementById('grupoTipo')?.value;
+    const docente = document.getElementById('grupoDocente')?.value;
+
+    // Validar que todos los campos existan y tengan valor
+    if (!codigo || !nombre || !tipo || !docente) {
+        mostrarNotificacion('Todos los campos son obligatorios', 'error');
+        return;
+    }
+
     const datos = {
-        codigo: document.getElementById('grupoCodigo').value,
-        nombre: document.getElementById('grupoNombre').value,
-        id_tipo: parseInt(document.getElementById('grupoTipo').value),
-        id_programa: parseInt(document.getElementById('grupoPrograma').value),
-        id_docente: parseInt(document.getElementById('grupoDocente').value)
+        codigo,
+        nombre,
+        id_tipo: parseInt(tipo),
+        id_docente: parseInt(docente)
     };
     
     try {
@@ -623,7 +633,7 @@ document.getElementById('formGrupo').addEventListener('submit', async (e) => {
         const method = id ? 'PUT' : 'POST';
         
         const response = await fetch(url, {
-            method: method,
+            method,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(datos)
         });
@@ -635,7 +645,7 @@ document.getElementById('formGrupo').addEventListener('submit', async (e) => {
             cerrarModal('modalGrupo');
             cargarGrupos();
         } else {
-            mostrarNotificacion(data.error || 'Error al guardar', 'error');
+            mostrarNotificacion(data.error || 'Error al guardar grupo', 'error');
         }
         
     } catch (error) {
@@ -749,32 +759,46 @@ function abrirModalEliminarGrupo(id, codigo) {
 
 // Cargar selectores para el formulario de grupos
 async function cargarTiposCursoSelect() {
+    const selectTipo = document.getElementById('grupoTipo');
+    const selectPrograma = document.getElementById('grupoPrograma');
+
+    // Si los elementos no existen (modal no abierto), salir sin error
+    if (!selectTipo && !selectPrograma) return;
+
     try {
         const response = await fetch('/api/admin/tipos-curso');
         const data = await response.json();
         
         if (data.success) {
-            const select = document.getElementById('grupoTipo');
-            select.innerHTML = '<option value="">Seleccionar...</option>' +
-                data.tipos.filter(t => t.activo).map(t => `<option value="${t.id_tipo}">${t.modulo} - ${formatearMoneda(t.valor_hora)}/hora</option>`).join('');
-        }
-        if (data.success) {
-            const select = document.getElementById('grupoPrograma');
-            select.innerHTML = '<option value="">Seleccionar...</option>' +
-                data.tipos.filter(t => t.activo).map(t => `<option value="${t.id_tipo}">${t.programa}</option>`).join('');
+            // Llenar Tipo de Curso (Módulo)
+            if (selectTipo) {
+                selectTipo.innerHTML = '<option value="">Seleccionar...</option>' +
+                    data.tipos.filter(t => t.activo).map(t => 
+                        `<option value="${t.id_tipo}">${t.modulo} - ${formatearMoneda(t.valor_hora)}/hora</option>`
+                    ).join('');
+            }
+
+            // Llenar Programa (si existe el select)
+            if (selectPrograma) {
+                selectPrograma.innerHTML = '<option value="">Seleccionar...</option>' +
+                    data.tipos.filter(t => t.activo).map(t => 
+                        `<option value="${t.id_tipo}">${t.programa}</option>`
+                    ).join('');
+            }
         }
     } catch (error) {
         console.error('Error cargando tipos de curso:', error);
     }
 }
-
 async function cargarDocentesSelect() {
+    const select = document.getElementById('grupoDocente');
+    if (!select) return; // Evita error si el modal no está abierto
+
     try {
         const response = await fetch('/api/admin/docentes');
         const data = await response.json();
         
         if (data.success) {
-            const select = document.getElementById('grupoDocente');
             select.innerHTML = '<option value="">Seleccionar...</option>' +
                 data.docentes.map(d => `<option value="${d.id_usuario}">${d.nombre} (${d.documento})</option>`).join('');
         }
@@ -1602,7 +1626,7 @@ async function cargarHistoricoHoras() {
 
         tbody.innerHTML = data.registros.map(r => `
             <tr>
-                <td>${r.fecha}</td>
+                <td>${formatearFecha(r.fecha)}</td>
                 <td>${r.docente}</td>
                 <td>${r.documento}</td>
                 <td>${r.grupo_codigo} - ${r.grupo_nombre}</td>
@@ -1635,4 +1659,26 @@ async function cargarDocentesFiltro() {
     } catch (error) {
         console.error('Error cargando docentes para filtro:', error);
     }
+}
+
+function formatearFecha(fecha) {
+    if (!fecha) return '-';
+
+    let d;
+
+    // Si ya viene con hora (DATETIME)
+    if (fecha.includes('T') || fecha.includes(' ')) {
+        d = new Date(fecha);
+    } else {
+        // Si es solo DATE (YYYY-MM-DD)
+        d = new Date(fecha + 'T00:00:00');
+    }
+
+    if (isNaN(d)) return '-';
+
+    return d.toLocaleDateString('es-CO', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+    });
 }

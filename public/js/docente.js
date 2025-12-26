@@ -159,8 +159,20 @@ async function cargarGruposSelect() {
             const select = document.getElementById('registroGrupo');
             select.innerHTML = '<option value="">Seleccionar grupo...</option>' +
                 data.grupos.filter(g => g.activo).map(g => 
-                    `<option value="${g.id_grupo}">${g.codigo} - ${g.nombre}</option>`
+                    `<option value="${g.id_grupo}" data-programa="${g.programa || ''}" data-modulo="${g.tipo_curso || ''}">
+                        ${g.codigo} - ${g.nombre}
+                    </option>`
                 ).join('');
+
+            // Evento para cargar programa y módulo al seleccionar grupo
+            select.addEventListener('change', () => {
+                const selected = select.options[select.selectedIndex];
+                const programa = selected.dataset.programa || 'No definido';
+                const modulo = selected.dataset.modulo || 'No definido';
+
+                document.getElementById('registroPrograma').value = programa;
+                document.getElementById('registroModulo').value = modulo;
+            });
         }
     } catch (error) {
         console.error('Error cargando grupos:', error);
@@ -195,12 +207,13 @@ document.getElementById('formRegistrarHora').addEventListener('submit', async (e
     e.preventDefault();
     
     const datos = {
-        fecha: document.getElementById('registroFecha').value,
-        id_grupo: parseInt(document.getElementById('registroGrupo').value),
-        hora_ingreso: document.getElementById('registroHoraIngreso').value,
-        hora_salida: document.getElementById('registroHoraSalida').value,
-        observaciones: document.getElementById('registroObservaciones').value
-    };
+    fecha: document.getElementById('registroFecha').value,
+    id_grupo: parseInt(document.getElementById('registroGrupo').value),
+    hora_ingreso: document.getElementById('registroHoraIngreso').value,
+    hora_salida: document.getElementById('registroHoraSalida').value,
+    observaciones: document.getElementById('registroObservaciones').value,
+    tema_desarrollado: document.getElementById('registroTema').value.trim()
+};
     
     try {
         const response = await fetch('/api/docente/registrar-hora', {
@@ -230,17 +243,37 @@ document.getElementById('formRegistrarHora').addEventListener('submit', async (e
 // ========================================
 // HISTORIAL
 // ========================================
-async function cargarGruposSelectFiltro() {
+async function cargarGruposSelect() {
     try {
         const response = await fetch('/api/docente/mis-grupos');
         const data = await response.json();
         
         if (data.success) {
-            const select = document.getElementById('filtroGrupo');
-            select.innerHTML = '<option value="">Todos los grupos</option>' +
-                data.grupos.map(g => 
-                    `<option value="${g.id_grupo}">${g.codigo} - ${g.nombre}</option>`
+            const select = document.getElementById('registroGrupo');
+            select.innerHTML = '<option value="">Seleccionar grupo...</option>' +
+                data.grupos.filter(g => g.activo).map(g => 
+                    `<option value="${g.id_grupo}" 
+                             data-programa="${g.programa || ''}" 
+                             data-modulo="${g.tipo_curso || ''}">
+                        ${g.codigo} - ${g.nombre}
+                    </option>`
                 ).join('');
+
+            // Limpiar campos al cargar
+            document.getElementById('registroPrograma').value = '';
+            document.getElementById('registroModulo').value = '';
+
+            // Evento cambio de grupo
+            select.addEventListener('change', () => {
+                const selected = select.options[select.selectedIndex];
+                if (selected.value) {
+                    document.getElementById('registroPrograma').value = selected.dataset.programa || 'No definido';
+                    document.getElementById('registroModulo').value = selected.dataset.modulo || 'No definido';
+                } else {
+                    document.getElementById('registroPrograma').value = '';
+                    document.getElementById('registroModulo').value = '';
+                }
+            });
         }
     } catch (error) {
         console.error('Error cargando grupos:', error);
@@ -278,21 +311,24 @@ async function cargarHistorial() {
             let totalValor = 0;
             
             tbody.innerHTML = data.registros.map(r => {
-                totalHoras += parseFloat(r.horas_trabajadas);
-                totalValor += parseFloat(r.valor);
-                
-                return `
-                    <tr>
-                        <td data-label="Fecha:">${formatearFecha(r.fecha)}</td>
-                        <td data-label="Grupo:">${r.codigo}</td>
-                        <td data-label="Ingreso:">${r.hora_ingreso}</td>
-                        <td data-label="Salida:">${r.hora_salida}</td>
-                        <td data-label="Horas:">${parseFloat(r.horas_trabajadas).toFixed(2)}</td>
-                        <td data-label="Valor:">${formatearMoneda(r.valor)}</td>
-                        <td data-label="Obs:">${r.observaciones || '-'}</td>
-                    </tr>
-                `;
-            }).join('');
+    totalHoras += parseFloat(r.horas_trabajadas);
+    totalValor += parseFloat(r.valor);
+    
+    return `
+        <tr>
+            <td data-label="Fecha:">${formatearFecha(r.fecha)}</td>
+            <td data-label="Grupo:">${r.codigo} - ${r.nombre_grupo}</td>
+            <td data-label="Programa:">${r.programa || '-'}</td>
+            <td data-label="Módulo:">${r.modulo || '-'}</td>
+            <td data-label="Tema:">${r.tema_desarrollado || '-'}</td>
+            <td data-label="Ingreso:">${r.hora_ingreso}</td>
+            <td data-label="Salida:">${r.hora_salida}</td>
+            <td data-label="Horas:">${parseFloat(r.horas_trabajadas).toFixed(2)}</td>
+            <td data-label="Valor:">${formatearMoneda(r.valor)}</td>
+            <td data-label="Obs:">${r.observaciones || '-'}</td>
+        </tr>
+    `;
+}).join('');
             
             document.getElementById('totalHoras').textContent = totalHoras.toFixed(2);
             document.getElementById('totalValor').textContent = formatearMoneda(totalValor);
