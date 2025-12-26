@@ -459,9 +459,23 @@ const descargarCuentaPDF = async (req, res) => {
         );
 
         // Configurar respuesta como PDF
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename="Cuenta_de_Cobro_${String(cuenta.id_cuenta).padStart(3, '0')}.pdf"`);
+        // Mes en letra (MAYÚSCULAS)
+const mesesArray = ['', 'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 
+                    'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
+const nombreMes = mesesArray[cuenta.mes];
 
+// Nombre del docente en mayúsculas
+const nombreDocente = cuenta.nombre.trim().toUpperCase();
+
+// Nombre final del archivo
+const nombreArchivo = `CUENTA DE COBRO ${nombreMes} - ${nombreDocente}.pdf`;
+
+// Detecta si es vista previa o descarga
+const esVistaPrevia = req.path.includes('ver');
+const disposicion = esVistaPrevia ? 'inline' : 'attachment';
+
+res.setHeader('Content-Type', 'application/pdf');
+res.setHeader('Content-Disposition', `${disposicion}; filename="${nombreArchivo}"`);
         const doc = new PDFDocument({ size: 'A4', margin: 50 });
         doc.pipe(res);
 
@@ -571,9 +585,23 @@ const verCuentaPDF = async (req, res) => {
         );
 
         // Headers para VISTA PREVIA (inline)
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `inline; filename="Cuenta_de_Cobro_${String(cuenta.id_cuenta).padStart(3, '0')}.pdf"`);
+        // Mes en letra (MAYÚSCULAS)
+const mesesArray = ['', 'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 
+                    'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
+const nombreMes = mesesArray[cuenta.mes];
 
+// Nombre del docente en mayúsculas
+const nombreDocente = cuenta.nombre.trim().toUpperCase();
+
+// Nombre final del archivo
+const nombreArchivo = `CUENTA DE COBRO ${nombreMes} - ${nombreDocente}.pdf`;
+
+// Detecta si es vista previa o descarga
+const esVistaPrevia = req.path.includes('ver');
+const disposicion = esVistaPrevia ? 'inline' : 'attachment';
+
+res.setHeader('Content-Type', 'application/pdf');
+res.setHeader('Content-Disposition', `${disposicion}; filename="${nombreArchivo}"`);
         const doc = new PDFDocument({ size: 'A4', margin: 50 });
         doc.pipe(res);
 
