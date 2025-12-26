@@ -65,6 +65,35 @@ function cambiarTabDocente(tabName) {
     if (window.innerWidth <= 768) {
         toggleMenuDocente();
     }
+
+    async function cargarGruposSelectFiltro() {
+    try {
+        const response = await fetch('/api/docente/mis-grupos');
+        const data = await response.json();
+        
+        if (data.success) {
+            const select = document.getElementById('filtroGrupo');
+            select.innerHTML = '<option value="">Todos los grupos</option>';
+            
+            // Solo grupos activos
+            const gruposActivos = data.grupos.filter(g => g.activo);
+            
+            if (gruposActivos.length === 0) {
+                select.innerHTML += '<option value="" disabled>No tienes grupos activos</option>';
+            } else {
+                gruposActivos.forEach(g => {
+                    const option = document.createElement('option');
+                    option.value = g.id_grupo;
+                    option.textContent = `${g.codigo} - ${g.nombre}`;
+                    select.appendChild(option);
+                });
+            }
+        }
+    } catch (error) {
+        console.error('Error cargando grupos para filtro:', error);
+        mostrarNotificacion('Error al cargar los grupos', 'error');
+    }
+}
     
     // Cargar datos según la pestaña
     if (tabName === 'dashboard') {
@@ -613,7 +642,7 @@ async function cargarGruposPlaneador() {
     }
 }
 
-async function generarPlaneadorExcel() {
+function generarPlaneadorExcel() {
     const mes = document.getElementById('planeadorMes').value;
     const anio = document.getElementById('planeadorAnio').value;
     const grupo = document.getElementById('planeadorGrupo').value;
@@ -624,13 +653,13 @@ async function generarPlaneadorExcel() {
     }
 
     let url = `/api/docente/generar-planeador/${mes}/${anio}`;
-    if (grupo !== 'todos') {
+    if (grupo && grupo !== 'todos') {
         url += `/${grupo}`;
     }
 
+    // Descarga directa
     window.location.href = url;
 }
-
 // Llamar al cargar la pestaña
 // (agregar en configurarNavegacion cuando tabName === 'planeadores')
 
