@@ -64,7 +64,7 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
         
         if (response.ok && data.success) {
             // Login exitoso
-            mostrarExito('¡Bienvenida! Redirigiendo...');
+            mostrarExito('¡Bienvenid@! Redirigiendo...');
             
             // Redirigir según el rol
             setTimeout(() => {
