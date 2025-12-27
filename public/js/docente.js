@@ -52,6 +52,13 @@ function configurarNavegacion() {
     });
 }
 
+function toggleMenuDocente() {
+    const menu = document.querySelector('.mobile-menu');
+    if (menu) {
+        menu.classList.toggle('show');
+    }
+}
+
 function cambiarTabDocente(tabName) {
     // Desactivar todos
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -142,39 +149,38 @@ async function cargarDashboard() {
 // MIS GRUPOS
 // ========================================
 async function cargarMisGrupos() {
+    const tbody = document.getElementById('tablaMisGrupos');
+    tbody.innerHTML = '<tr><td colspan="4" class="text-center">Cargando...</td></tr>';
+
     try {
         const response = await fetch('/api/docente/mis-grupos');
+        
+        if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status}`);
+        }
+        
         const data = await response.json();
         
-        if (data.success) {
-            const tbody = document.getElementById('tablaMisGrupos');
-            
-            if (data.grupos.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center">No tienes grupos asignados</td></tr>';
-                return;
-            }
-            
+        if (data.success && data.grupos.length > 0) {
             tbody.innerHTML = data.grupos.map(g => `
                 <tr>
-                    <td data-label="Código:"><strong>${g.codigo}</strong></td>
-                    <td data-label="Nombre:">${g.nombre}</td>
-                    <td data-label="Tipo:">${g.tipo_curso}</td>
+                    <td data-label="Grupo:">${g.codigo} - ${g.nombre}</td>
+                    <td data-label="Tipo de Curso:">${g.programa || '-'}</td>
                     <td data-label="Valor/Hora:">${formatearMoneda(g.valor_hora)}</td>
-                    <td data-label="Estado:">
-                        <span class="badge ${g.activo ? 'badge-success' : 'badge-danger'}">
-                            ${g.activo ? 'Activo' : 'Inactivo'}
-                        </span>
+                    <td data-label="Estado:" class="status ${g.activo ? 'active' : 'inactive'}">
+                        ${g.activo ? 'Activo' : 'Inactivo'}
                     </td>
                 </tr>
             `).join('');
+        } else {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center">No tienes grupos asignados</td></tr>';
         }
-        
     } catch (error) {
-        console.error('Error cargando grupos:', error);
-        mostrarNotificacion('Error al cargar grupos', 'error');
+        console.error('Error cargando mis grupos:', error);
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center text-error">Error al cargar grupos: ${error.message}</td></tr>`;
+        mostrarNotificacion('Error al cargar grupos. Revisa la conexión.', 'error');
     }
 }
-
 // ========================================
 // REGISTRAR HORAS
 // ========================================
@@ -673,11 +679,14 @@ async function verPlaneadorExcel() {
         return;
     }
 
+    // Calcular el último día del mes correctamente
+    const ultimoDia = new Date(anio, mes, 0).getDate(); // Ej: noviembre → 30, febrero → 28/29
+
     try {
         let url = '/api/docente/historial';
         const params = new URLSearchParams();
         params.append('desde', `${anio}-${mes.padStart(2, '0')}-01`);
-        params.append('hasta', `${anio}-${mes.padStart(2, '0')}-31`);
+        params.append('hasta', `${anio}-${mes.padStart(2, '0')}-${ultimoDia}`); // ← CORREGIDO
         if (grupoId && grupoId !== 'todos') {
             params.append('grupo', grupoId);
         }
