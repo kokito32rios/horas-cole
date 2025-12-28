@@ -37,15 +37,13 @@ async function verificarSesion() {
     }
 }
 
-
-
-
 // ========================================
 // NAVEGACIÓN POR PESTAÑAS
 // ========================================
 function configurarNavegacion() {
     document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault(); // Prevenir comportamiento por defecto si es necesario
             const tabName = btn.dataset.tab;
             cambiarTabDocente(tabName);
         });
@@ -53,10 +51,13 @@ function configurarNavegacion() {
 }
 
 function toggleMenuDocente() {
-    const menu = document.querySelector('.mobile-menu');
-    if (menu) {
-        menu.classList.toggle('show');
-    }
+    const nav = document.getElementById('adminNav');
+    const overlay = document.getElementById('navOverlay');
+    const hamburger = document.getElementById('hamburgerBtn');
+
+    nav.classList.toggle('show');
+    overlay.classList.toggle('show');
+    hamburger.classList.toggle('active');
 }
 
 function cambiarTabDocente(tabName) {
@@ -65,43 +66,17 @@ function cambiarTabDocente(tabName) {
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
     
     // Activar el seleccionado
-    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
-    document.getElementById(`tab-${tabName}`).classList.add('active');
+    const btn = document.querySelector(`[data-tab="${tabName}"]`);
+    if (btn) btn.classList.add('active');
     
-    // Cerrar menú en móvil
+    const tab = document.getElementById(`tab-${tabName}`);
+    if (tab) tab.classList.add('active');
+    
+    // CERRAR MENÚ EN MÓVIL AUTOMÁTICAMENTE
     if (window.innerWidth <= 768) {
         toggleMenuDocente();
     }
 
-    async function cargarGruposSelectFiltro() {
-    try {
-        const response = await fetch('/api/docente/mis-grupos');
-        const data = await response.json();
-        
-        if (data.success) {
-            const select = document.getElementById('filtroGrupo');
-            select.innerHTML = '<option value="">Todos los grupos</option>';
-            
-            // Solo grupos activos
-            const gruposActivos = data.grupos.filter(g => g.activo);
-            
-            if (gruposActivos.length === 0) {
-                select.innerHTML += '<option value="" disabled>No tienes grupos activos</option>';
-            } else {
-                gruposActivos.forEach(g => {
-                    const option = document.createElement('option');
-                    option.value = g.id_grupo;
-                    option.textContent = `${g.codigo} - ${g.nombre}`;
-                    select.appendChild(option);
-                });
-            }
-        }
-    } catch (error) {
-        console.error('Error cargando grupos para filtro:', error);
-        mostrarNotificacion('Error al cargar los grupos', 'error');
-    }
-}
-    
     // Cargar datos según la pestaña
     if (tabName === 'dashboard') {
         cargarDashboard();
@@ -114,7 +89,6 @@ function cambiarTabDocente(tabName) {
         cargarHistorial();
     } else if (tabName === 'cuentas') {
         cargarCuentasGeneradas();
-        
     } else if (tabName === 'perfil') {
         cargarMiPerfil();
     } else if (tabName === 'planeadores') {
@@ -128,7 +102,6 @@ function cambiarTabDocente(tabName) {
 // ========================================
 async function cargarDashboard() {
     try {
-        // Cargar estadísticas
         const response = await fetch('/api/docente/estadisticas');
         const data = await response.json();
         
@@ -138,7 +111,6 @@ async function cargarDashboard() {
             document.getElementById('statClasesMes').textContent = data.estadisticas.clasesMes;
             document.getElementById('statTotalPagar').textContent = formatearMoneda(data.estadisticas.totalPagar);
         }
-        
     } catch (error) {
         console.error('Error cargando dashboard:', error);
         mostrarNotificacion('Error al cargar estadísticas', 'error');
@@ -154,10 +126,7 @@ async function cargarMisGrupos() {
 
     try {
         const response = await fetch('/api/docente/mis-grupos');
-        
-        if (!response.ok) {
-            throw new Error(`Error HTTP: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
         
         const data = await response.json();
         
@@ -177,10 +146,11 @@ async function cargarMisGrupos() {
         }
     } catch (error) {
         console.error('Error cargando mis grupos:', error);
-        tbody.innerHTML = `<tr><td colspan="4" class="text-center text-error">Error al cargar grupos: ${error.message}</td></tr>`;
-        mostrarNotificacion('Error al cargar grupos. Revisa la conexión.', 'error');
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center text-error">Error al cargar grupos</td></tr>`;
+        mostrarNotificacion('Error al cargar grupos', 'error');
     }
 }
+
 // ========================================
 // REGISTRAR HORAS
 // ========================================
@@ -203,14 +173,10 @@ async function cargarGruposSelect() {
                     </option>`
                 ).join('');
 
-            // Evento para cargar programa y módulo al seleccionar grupo
             select.addEventListener('change', () => {
                 const selected = select.options[select.selectedIndex];
-                const programa = selected.dataset.programa || 'No definido';
-                const modulo = selected.dataset.modulo || 'No definido';
-
-                document.getElementById('registroPrograma').value = programa;
-                document.getElementById('registroModulo').value = modulo;
+                document.getElementById('registroPrograma').value = selected.dataset.programa || 'No definido';
+                document.getElementById('registroModulo').value = selected.dataset.modulo || 'No definido';
             });
         }
     } catch (error) {
@@ -227,10 +193,7 @@ function calcularHorasAutomatico() {
             const [h1, m1] = ingreso.value.split(':').map(Number);
             const [h2, m2] = salida.value.split(':').map(Number);
             
-            const minutos1 = h1 * 60 + m1;
-            const minutos2 = h2 * 60 + m2;
-            
-            let diferencia = minutos2 - minutos1;
+            let diferencia = (h2 * 60 + m2) - (h1 * 60 + m1);
             if (diferencia < 0) diferencia += 24 * 60;
             
             const horas = (diferencia / 60).toFixed(2);
@@ -246,13 +209,13 @@ document.getElementById('formRegistrarHora').addEventListener('submit', async (e
     e.preventDefault();
     
     const datos = {
-    fecha: document.getElementById('registroFecha').value,
-    id_grupo: parseInt(document.getElementById('registroGrupo').value),
-    hora_ingreso: document.getElementById('registroHoraIngreso').value,
-    hora_salida: document.getElementById('registroHoraSalida').value,
-    observaciones: document.getElementById('registroObservaciones').value,
-    tema_desarrollado: document.getElementById('registroTema').value.trim()
-};
+        fecha: document.getElementById('registroFecha').value,
+        id_grupo: parseInt(document.getElementById('registroGrupo').value),
+        hora_ingreso: document.getElementById('registroHoraIngreso').value,
+        hora_salida: document.getElementById('registroHoraSalida').value,
+        observaciones: document.getElementById('registroObservaciones').value,
+        tema_desarrollado: document.getElementById('registroTema').value.trim()
+    };
     
     try {
         const response = await fetch('/api/docente/registrar-hora', {
@@ -272,7 +235,6 @@ document.getElementById('formRegistrarHora').addEventListener('submit', async (e
         } else {
             mostrarNotificacion(data.error || 'Error al guardar registro', 'error');
         }
-        
     } catch (error) {
         console.error('Error registrando hora:', error);
         mostrarNotificacion('Error al registrar hora', 'error');
@@ -282,40 +244,31 @@ document.getElementById('formRegistrarHora').addEventListener('submit', async (e
 // ========================================
 // HISTORIAL
 // ========================================
-async function cargarGruposSelect() {
+async function cargarGruposSelectFiltro() {
     try {
         const response = await fetch('/api/docente/mis-grupos');
         const data = await response.json();
         
         if (data.success) {
-            const select = document.getElementById('registroGrupo');
-            select.innerHTML = '<option value="">Seleccionar grupo...</option>' +
-                data.grupos.filter(g => g.activo).map(g => 
-                    `<option value="${g.id_grupo}" 
-                             data-programa="${g.programa || ''}" 
-                             data-modulo="${g.tipo_curso || ''}">
-                        ${g.codigo} - ${g.nombre}
-                    </option>`
-                ).join('');
-
-            // Limpiar campos al cargar
-            document.getElementById('registroPrograma').value = '';
-            document.getElementById('registroModulo').value = '';
-
-            // Evento cambio de grupo
-            select.addEventListener('change', () => {
-                const selected = select.options[select.selectedIndex];
-                if (selected.value) {
-                    document.getElementById('registroPrograma').value = selected.dataset.programa || 'No definido';
-                    document.getElementById('registroModulo').value = selected.dataset.modulo || 'No definido';
-                } else {
-                    document.getElementById('registroPrograma').value = '';
-                    document.getElementById('registroModulo').value = '';
-                }
-            });
+            const select = document.getElementById('filtroGrupo');
+            select.innerHTML = '<option value="">Todos los grupos</option>';
+            
+            const gruposActivos = data.grupos.filter(g => g.activo);
+            
+            if (gruposActivos.length === 0) {
+                select.innerHTML += '<option value="" disabled>No tienes grupos activos</option>';
+            } else {
+                gruposActivos.forEach(g => {
+                    const option = document.createElement('option');
+                    option.value = g.id_grupo;
+                    option.textContent = `${g.codigo} - ${g.nombre}`;
+                    select.appendChild(option);
+                });
+            }
         }
     } catch (error) {
-        console.error('Error cargando grupos:', error);
+        console.error('Error cargando grupos para filtro:', error);
+        mostrarNotificacion('Error al cargar los grupos', 'error');
     }
 }
 
@@ -341,7 +294,7 @@ async function cargarHistorial() {
             const tfoot = document.getElementById('totalHistorial');
             
             if (data.registros.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center">No hay registros</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="10" class="text-center">No hay registros</td></tr>';
                 tfoot.style.display = 'none';
                 return;
             }
@@ -350,30 +303,29 @@ async function cargarHistorial() {
             let totalValor = 0;
             
             tbody.innerHTML = data.registros.map(r => {
-    totalHoras += parseFloat(r.horas_trabajadas);
-    totalValor += parseFloat(r.valor);
-    
-    return `
-        <tr>
-            <td data-label="Fecha:">${formatearFecha(r.fecha)}</td>
-            <td data-label="Grupo:">${r.codigo} - ${r.nombre_grupo}</td>
-            <td data-label="Programa:">${r.programa || '-'}</td>
-            <td data-label="Módulo:">${r.modulo || '-'}</td>
-            <td data-label="Tema:">${r.tema_desarrollado || '-'}</td>
-            <td data-label="Ingreso:">${r.hora_ingreso}</td>
-            <td data-label="Salida:">${r.hora_salida}</td>
-            <td data-label="Horas:">${parseFloat(r.horas_trabajadas).toFixed(2)}</td>
-            <td data-label="Valor:">${formatearMoneda(r.valor)}</td>
-            <td data-label="Obs:">${r.observaciones || '-'}</td>
-        </tr>
-    `;
-}).join('');
+                totalHoras += parseFloat(r.horas_trabajadas);
+                totalValor += parseFloat(r.valor);
+                
+                return `
+                    <tr>
+                        <td>${formatearFecha(r.fecha)}</td>
+                        <td>${r.codigo} - ${r.nombre_grupo}</td>
+                        <td>${r.programa || '-'}</td>
+                        <td>${r.modulo || '-'}</td>
+                        <td>${r.tema_desarrollado || '-'}</td>
+                        <td>${r.hora_ingreso}</td>
+                        <td>${r.hora_salida || '-'}</td>
+                        <td>${parseFloat(r.horas_trabajadas).toFixed(2)}</td>
+                        <td>${formatearMoneda(r.valor)}</td>
+                        <td>${r.observaciones || '-'}</td>
+                    </tr>
+                `;
+            }).join('');
             
             document.getElementById('totalHoras').textContent = totalHoras.toFixed(2);
             document.getElementById('totalValor').textContent = formatearMoneda(totalValor);
             tfoot.style.display = 'table-footer-group';
         }
-        
     } catch (error) {
         console.error('Error cargando historial:', error);
         mostrarNotificacion('Error al cargar historial', 'error');
@@ -395,7 +347,6 @@ function llenarAnios() {
         select.innerHTML += `<option value="${i}">${i}</option>`;
     }
     
-    // Establecer mes y año actual
     const mesActual = new Date().getMonth() + 1;
     document.getElementById('cuentaMes').value = mesActual;
 }
@@ -405,21 +356,15 @@ async function generarCuentaCobro() {
     const anio = document.getElementById('cuentaAnio').value;
     
     try {
-        const response = await fetch(`/api/docente/cuenta-cobro/${mes}/${anio}`, {
-            method: 'POST'
-        });
-        
+        const response = await fetch(`/api/docente/cuenta-cobro/${mes}/${anio}`, { method: 'POST' });
         const data = await response.json();
         
         if (response.ok && data.success) {
             mostrarNotificacion('Cuenta de cobro generada exitosamente', 'success');
-            
-            // Recargar listado
             cargarCuentasGeneradas();
         } else {
             mostrarNotificacion(data.error || 'Error al generar cuenta de cobro', 'error');
         }
-        
     } catch (error) {
         console.error('Error generando cuenta:', error);
         mostrarNotificacion('Error al generar cuenta de cobro', 'error');
@@ -440,35 +385,32 @@ async function cargarCuentasGeneradas() {
             }
             
             tbody.innerHTML = data.cuentas.map(c => `
-    <tr>
-        <td data-label="Período:">${getNombreMes(c.mes)} ${c.anio}</td>
-        <td data-label="Horas:">${parseFloat(c.total_horas).toFixed(2)}</td>
-        <td data-label="Total:">${formatearMoneda(c.total_pagar)}</td>
-        <td data-label="Generado:">${formatearFecha(c.generado_el)}</td>
-        <td data-label="Acción:" class="action-btns">
-            <button class="btn btn-sm btn-info" onclick="verCuentaCobro(${c.id_cuenta})" title="Ver PDF">
-                👁️ Ver
-            </button>
-            <button class="btn btn-sm btn-primary" onclick="descargarCuenta(${c.id_cuenta})" title="Descargar PDF">
-                📥 Descargar
-            </button>
-        </td>
-    </tr>
-`).join('');
+                <tr>
+                    <td>${getNombreMes(c.mes)} ${c.anio}</td>
+                    <td>${parseFloat(c.total_horas).toFixed(2)}</td>
+                    <td>${formatearMoneda(c.total_pagar)}</td>
+                    <td>${formatearFecha(c.generado_el)}</td>
+                    <td class="action-btns">
+                        <button class="btn btn-sm btn-info" onclick="verCuentaCobro(${c.id_cuenta})" title="Ver PDF">
+                            👁️ Ver
+                        </button>
+                        <button class="btn btn-sm btn-primary" onclick="descargarCuenta(${c.id_cuenta})" title="Descargar PDF">
+                            📥 Descargar
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
         }
-        
     } catch (error) {
         console.error('Error cargando cuentas:', error);
     }
 }
 
 function verCuentaCobro(id) {
-    // Vista previa en nueva pestaña
     window.open(`/api/docente/ver-cuenta-pdf/${id}`, '_blank');
 }
 
 function descargarCuenta(id) {
-    // Descarga directa
     window.location.href = `/api/docente/descargar-cuenta-pdf/${id}`;
 }
 
@@ -476,8 +418,6 @@ function descargarCuenta(id) {
 // MI PERFIL
 // ========================================
 async function cargarMiPerfil() {
-    if (!usuarioActual) return;
-    
     try {
         const response = await fetch('/api/docente/mi-perfil');
         const data = await response.json();
@@ -533,86 +473,9 @@ document.getElementById('formPasswordDocente').addEventListener('submit', async 
         } else {
             mostrarNotificacion(data.error || 'Error al cambiar contraseña', 'error');
         }
-        
     } catch (error) {
         console.error('Error:', error);
         mostrarNotificacion('Error al cambiar contraseña', 'error');
-    }
-});
-
-// ========================================
-// UTILIDADES
-// ========================================
-function cerrarModalDocente(modalId) {
-    document.getElementById(modalId).classList.remove('show');
-}
-
-function formatearMoneda(valor) {
-    return new Intl.NumberFormat('es-CO', {
-        style: 'currency',
-        currency: 'COP',
-        minimumFractionDigits: 0
-    }).format(valor);
-}
-
-function formatearFecha(fecha) {
-    if (!fecha) return '-';
-
-    let d;
-
-    // Si ya viene con hora (DATETIME)
-    if (fecha.includes('T') || fecha.includes(' ')) {
-        d = new Date(fecha);
-    } else {
-        // Si es solo DATE (YYYY-MM-DD)
-        d = new Date(fecha + 'T00:00:00');
-    }
-
-    if (isNaN(d)) return '-';
-
-    return d.toLocaleDateString('es-CO', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-    });
-}
-
-function getNombreMes(num) {
-    const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
-                   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-    return meses[num - 1];
-}
-
-function mostrarNotificacion(mensaje, tipo = 'success') {
-    const notification = document.createElement('div');
-    notification.className = `notification ${tipo}`;
-    notification.textContent = mensaje;
-    
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        notification.remove();
-    }, 4000);
-}
-
-function cerrarSesionDocente() {
-    document.getElementById('modalCerrarSesion').classList.add('show');
-}
-
-async function confirmarCerrarSesionDocente() {
-    try {
-        await fetch('/api/auth/logout', { method: 'POST' });
-        window.location.href = '/login';
-    } catch (error) {
-        console.error('Error cerrando sesión:', error);
-        window.location.href = '/login';
-    }
-}
-
-// Cerrar modales al hacer clic fuera
-document.addEventListener('click', (e) => {
-    if (e.target.classList.contains('modal')) {
-        e.target.classList.remove('show');
     }
 });
 
@@ -663,11 +526,8 @@ function generarPlaneadorExcel() {
         url += `/${grupo}`;
     }
 
-    // Descarga directa
     window.location.href = url;
 }
-// Llamar al cargar la pestaña
-// (agregar en configurarNavegacion cuando tabName === 'planeadores')
 
 async function verPlaneadorExcel() {
     const mes = document.getElementById('planeadorMes').value;
@@ -679,14 +539,13 @@ async function verPlaneadorExcel() {
         return;
     }
 
-    // Calcular el último día del mes correctamente
-    const ultimoDia = new Date(anio, mes, 0).getDate(); // Ej: noviembre → 30, febrero → 28/29
+    const ultimoDia = new Date(anio, mes, 0).getDate();
 
     try {
         let url = '/api/docente/historial';
         const params = new URLSearchParams();
         params.append('desde', `${anio}-${mes.padStart(2, '0')}-01`);
-        params.append('hasta', `${anio}-${mes.padStart(2, '0')}-${ultimoDia}`); // ← CORREGIDO
+        params.append('hasta', `${anio}-${mes.padStart(2, '0')}-${ultimoDia}`);
         if (grupoId && grupoId !== 'todos') {
             params.append('grupo', grupoId);
         }
@@ -724,3 +583,59 @@ async function verPlaneadorExcel() {
 function cerrarModalPlaneador() {
     document.getElementById('modalPlaneadorPreview').classList.remove('show');
 }
+
+// ========================================
+// UTILIDADES
+// ========================================
+function cerrarModalDocente(modalId) {
+    document.getElementById(modalId).classList.remove('show');
+}
+
+function formatearMoneda(valor) {
+    return new Intl.NumberFormat('es-CO', {
+        style: 'currency',
+        currency: 'COP',
+        minimumFractionDigits: 0
+    }).format(valor);
+}
+
+function formatearFecha(fecha) {
+    if (!fecha) return '-';
+    const d = new Date(fecha.includes('T') || fecha.includes(' ') ? fecha : fecha + 'T00:00:00');
+    if (isNaN(d)) return '-';
+    return d.toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function getNombreMes(num) {
+    const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
+                   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    return meses[num - 1];
+}
+
+function mostrarNotificacion(mensaje, tipo = 'success') {
+    const notification = document.createElement('div');
+    notification.className = `notification ${tipo}`;
+    notification.textContent = mensaje;
+    document.body.appendChild(notification);
+    setTimeout(() => notification.remove(), 4000);
+}
+
+function cerrarSesionDocente() {
+    document.getElementById('modalCerrarSesion').classList.add('show');
+}
+
+async function confirmarCerrarSesionDocente() {
+    try {
+        await fetch('/api/auth/logout', { method: 'POST' });
+        window.location.href = '/login';
+    } catch (error) {
+        window.location.href = '/login';
+    }
+}
+
+// Cerrar modales al hacer clic fuera
+document.addEventListener('click', (e) => {
+    if (e.target.classList.contains('modal')) {
+        e.target.classList.remove('show');
+    }
+});

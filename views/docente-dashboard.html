@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="/css/styles.css" />
   </head>
   <body class="admin-body">
-    <!-- Header del Panel -->
+        <!-- Header del Panel -->
     <header class="admin-header">
       <div class="admin-header-content">
         <div class="admin-logo">
@@ -15,7 +15,7 @@
           <span class="admin-badge">Docente</span>
         </div>
 
-        <!-- Botón hamburguesa (solo visible en móvil) -->
+        <!-- Botón hamburguesa (ya lo tenías, lo mantenemos) -->
         <button
           class="hamburger-btn"
           id="hamburgerBtn"
@@ -40,12 +40,14 @@
       </div>
     </header>
 
-    <!-- Navegación por pestañas con overlay -->
+    <!-- Overlay para cerrar menú al tocar fuera -->
     <div
       class="nav-overlay"
       id="navOverlay"
       onclick="toggleMenuDocente()"
     ></div>
+
+    <!-- Navegación (con clase admin-nav que ya usas) -->
     <nav class="admin-nav" id="adminNav">
       <button class="nav-btn active" data-tab="dashboard">📊 Dashboard</button>
       <button class="nav-btn" data-tab="grupos">📚 Mis Grupos</button>
