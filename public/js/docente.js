@@ -122,7 +122,7 @@ async function cargarDashboard() {
 // ========================================
 async function cargarMisGrupos() {
     const tbody = document.getElementById('tablaMisGrupos');
-    tbody.innerHTML = '<tr><td colspan="4" class="text-center">Cargando...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center">Cargando...</td></tr>';
 
     try {
         const response = await fetch('/api/docente/mis-grupos');
@@ -133,24 +133,26 @@ async function cargarMisGrupos() {
         if (data.success && data.grupos.length > 0) {
             tbody.innerHTML = data.grupos.map(g => `
                 <tr>
-                    <td data-label="Grupo:">${g.codigo} - ${g.nombre}</td>
-                    <td data-label="Tipo de Curso:">${g.programa || '-'}</td>
+                    <td data-label="Código:"><strong>${g.codigo}</strong></td>
+                    <td data-label="Nombre:">${g.nombre}</td>
+                    <td data-label="Programa:">${g.programa || '-'}</td> <!-- ← PROGRAMA AQUÍ -->
                     <td data-label="Valor/Hora:">${formatearMoneda(g.valor_hora)}</td>
-                    <td data-label="Estado:" class="status ${g.activo ? 'active' : 'inactive'}">
-                        ${g.activo ? 'Activo' : 'Inactivo'}
+                    <td data-label="Estado:">
+                        <span class="badge ${g.activo ? 'badge-success' : 'badge-danger'}">
+                            ${g.activo ? 'Activo' : 'Inactivo'}
+                        </span>
                     </td>
                 </tr>
             `).join('');
         } else {
-            tbody.innerHTML = '<tr><td colspan="4" class="text-center">No tienes grupos asignados</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center">No tienes grupos asignados</td></tr>';
         }
     } catch (error) {
         console.error('Error cargando mis grupos:', error);
-        tbody.innerHTML = `<tr><td colspan="4" class="text-center text-error">Error al cargar grupos</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-error">Error al cargar grupos</td></tr>`;
         mostrarNotificacion('Error al cargar grupos', 'error');
     }
 }
-
 // ========================================
 // REGISTRAR HORAS
 // ========================================
