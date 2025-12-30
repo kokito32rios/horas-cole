@@ -15,10 +15,17 @@
           <span class="admin-badge">Administrador</span>
         </div>
 
+        <!-- BOTÓN HAMBURGUESA PARA MÓVIL -->
+        <button class="hamburger-btn" id="hamburgerBtn">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+
         <div class="admin-user">
-          <span class="welcome-text"
-            >Bienvenida, <strong id="nombreUsuario"></strong
-          ></span>
+          <span class="welcome-text">
+            Bienvenida, <strong id="nombreUsuario"></strong>
+          </span>
           <button class="btn btn-secondary btn-sm" onclick="cerrarSesion()">
             Cerrar Sesión
           </button>
@@ -26,8 +33,7 @@
       </div>
     </header>
 
-    <!-- Navegación por pestañas con overlay -->
-
+    <!-- NAVEGACIÓN (horizontal en desktop, lateral en móvil) -->
     <nav class="admin-nav" id="adminNav">
       <button class="nav-btn active" data-tab="dashboard">📊 Dashboard</button>
       <button class="nav-btn" data-tab="usuarios">👥 Usuarios</button>
@@ -40,6 +46,9 @@
       <button class="nav-btn" data-tab="historico">⏱️ Histórico Horas</button>
       <button class="nav-btn" data-tab="perfil">👤 Mi Perfil</button>
     </nav>
+
+    <!-- OVERLAY OSCURO PARA CERRAR MENÚ EN MÓVIL -->
+    <div class="nav-overlay" id="navOverlay"></div>
 
     <!-- Contenedor principal -->
     <main class="admin-main">
@@ -144,6 +153,7 @@
           </table>
         </div>
       </section>
+
       <!-- TAB: MÓDULOS -->
       <section id="tab-cursos" class="tab-content">
         <div class="tab-header">
@@ -178,7 +188,6 @@
         <h2 class="tab-title">🏦 Gestión Bancaria</h2>
 
         <div class="bancos-grid">
-          <!-- Sección Bancos -->
           <div class="bancos-section">
             <div class="section-header">
               <h3>Bancos</h3>
@@ -207,7 +216,6 @@
             </div>
           </div>
 
-          <!-- Sección Tipos de Cuenta -->
           <div class="bancos-section">
             <div class="section-header">
               <h3>Tipos de Cuenta</h3>
@@ -238,7 +246,7 @@
         </div>
       </section>
 
-      <!-- TAB: CUENTAS DE COBRO CON FILTROS -->
+      <!-- TAB: CUENTAS DE COBRO -->
       <section id="tab-cuentas-cobro" class="tab-content">
         <h2 class="tab-title">📄 Cuentas de Cobro Generadas</h2>
 
@@ -313,7 +321,7 @@
         </div>
       </section>
 
-      <!-- NUEVA TAB: HISTÓRICO DE HORAS -->
+      <!-- TAB: HISTÓRICO DE HORAS -->
       <section id="tab-historico" class="tab-content">
         <h2 class="tab-title">⏱️ Histórico de Registros de Horas</h2>
 
@@ -332,7 +340,6 @@
             </div>
             <div class="form-group">
               <label>Docente</label>
-
               <select id="filtroDocente">
                 <option value="">Todos los docentes</option>
               </select>
@@ -426,7 +433,7 @@
       </section>
     </main>
 
-    <!-- MODAL: Usuario -->
+    <!-- TODOS LOS MODALES (exactamente como los tenías) -->
     <div id="modalUsuario" class="modal">
       <div class="modal-content modal-large">
         <span class="close-modal" onclick="cerrarModal('modalUsuario')"
@@ -512,7 +519,6 @@
       </div>
     </div>
 
-    <!-- MODAL: Grupo -->
     <div id="modalGrupo" class="modal">
       <div class="modal-content">
         <span class="close-modal" onclick="cerrarModal('modalGrupo')"
@@ -550,13 +556,6 @@
             </select>
           </div>
 
-          <!-- <div class="form-group">
-            <label>Programa *</label>
-            <select id="grupoPrograma" required>
-              <option value="">Seleccionar...</option>
-            </select>
-          </div> -->
-
           <div class="form-group">
             <label>Docente Asignado *</label>
             <select id="grupoDocente" required>
@@ -578,7 +577,6 @@
       </div>
     </div>
 
-    <!-- MODAL: Tipo de Curso -->
     <div id="modalCurso" class="modal">
       <div class="modal-content">
         <span class="close-modal" onclick="cerrarModal('modalCurso')"
@@ -636,7 +634,6 @@
       </div>
     </div>
 
-    <!-- MODAL: Banco -->
     <div id="modalBanco" class="modal">
       <div class="modal-content modal-small">
         <span class="close-modal" onclick="cerrarModal('modalBanco')"
@@ -671,7 +668,6 @@
       </div>
     </div>
 
-    <!-- MODAL: Tipo de Cuenta -->
     <div id="modalTipoCuenta" class="modal">
       <div class="modal-content modal-small">
         <span class="close-modal" onclick="cerrarModal('modalTipoCuenta')"
@@ -706,7 +702,6 @@
       </div>
     </div>
 
-    <!-- MODAL: Cambiar Contraseña -->
     <div id="modalPassword" class="modal">
       <div class="modal-content modal-small">
         <span class="close-modal" onclick="cerrarModal('modalPassword')"
@@ -742,7 +737,6 @@
       </div>
     </div>
 
-    <!-- MODAL: Confirmar Activar/Desactivar Usuario -->
     <div id="modalConfirmarEstado" class="modal">
       <div class="modal-content modal-small">
         <div
@@ -778,7 +772,6 @@
       </div>
     </div>
 
-    <!-- MODAL: Confirmar Eliminar Usuario -->
     <div id="modalEliminarUsuario" class="modal">
       <div class="modal-content modal-small">
         <div
@@ -827,7 +820,6 @@
       </div>
     </div>
 
-    <!-- MODAL: Cerrar Sesión -->
     <div id="modalCerrarSesion" class="modal">
       <div class="modal-content modal-small">
         <div
@@ -857,6 +849,36 @@
         </div>
       </div>
     </div>
+
+    <!-- JavaScript para el menú hamburguesa -->
+    <script>
+      const hamburgerBtn = document.getElementById("hamburgerBtn");
+      const adminNav = document.getElementById("adminNav");
+      const navOverlay = document.getElementById("navOverlay");
+
+      hamburgerBtn.addEventListener("click", () => {
+        hamburgerBtn.classList.toggle("active");
+        adminNav.classList.toggle("show");
+        navOverlay.classList.toggle("show");
+      });
+
+      navOverlay.addEventListener("click", () => {
+        hamburgerBtn.classList.remove("active");
+        adminNav.classList.remove("show");
+        navOverlay.classList.remove("show");
+      });
+
+      // Cerrar al seleccionar una pestaña en móvil
+      document.querySelectorAll(".nav-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          if (window.innerWidth <= 768) {
+            hamburgerBtn.classList.remove("active");
+            adminNav.classList.remove("show");
+            navOverlay.classList.remove("show");
+          }
+        });
+      });
+    </script>
 
     <script src="/js/admin.js"></script>
   </body>
