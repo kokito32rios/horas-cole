@@ -1535,19 +1535,19 @@ async function cargarCuentasCobro() {
         }
 
                 tbody.innerHTML = data.cuentas.map(c => `
-            <tr>
-                <td>${c.docente}</td>
-                <td>${c.documento}</td>
-                <td><strong>${obtenerNombreMes(c.mes)} ${c.anio}</strong></td>
-                <td>${parseFloat(c.total_horas).toFixed(2)}</td>
-                <td>${formatearMoneda(c.total_pagar)}</td>
-                <td>${c.generado_el}</td>
-                <td class="action-btns">
-                    <button class="btn-icon" onclick="abrirVistaPreviaCuenta('/api/admin/cuenta-cobro/pdf?id=${c.id_cuenta_cobro}')" title="Vista Previa">👁️</button>
-                    <a href="/api/admin/cuenta-cobro/pdf?id=${c.id_cuenta_cobro}" target="_blank" class="btn-icon" title="Descargar PDF">📄</a>
-                </td>
-            </tr>
-        `).join('');
+    <tr>
+        <td>${c.docente}</td>
+        <td>${c.documento}</td>
+        <td><strong>${obtenerNombreMes(c.mes)} ${c.anio}</strong></td>
+        <td>${parseFloat(c.total_horas).toFixed(2)}</td>
+        <td>${formatearMoneda(c.total_pagar)}</td>
+        <td>${c.generado_el}</td>
+        <td class="action-btns">
+            <button class="btn-icon" onclick="abrirVistaPreviaCuenta('/api/admin/cuenta-cobro/pdf?id=${c.id_cuenta}')" title="Vista Previa">👁️</button>
+            <a href="/api/admin/cuenta-cobro/pdf?id=${c.id_cuenta}" target="_blank" class="btn-icon" title="Descargar PDF">📄</a>
+        </td>
+    </tr>
+`).join('');
 
     } catch (error) {
         console.error('Error cargando cuentas de cobro:', error);
