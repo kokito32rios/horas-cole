@@ -835,21 +835,21 @@ const obtenerHistoricoHoras = async (req, res) => {
 };
 
 // ========================================
-// GENERAR PDF CUENTA DE COBRO
+// GENERAR PDF CUENTA DE COBRO (para admin)
 // ========================================
 async function generarPDFCuentaCobro(req, res) {
     try {
-        const { id } = req.query;
-        console.log('Generando PDF cuenta de cobro para ID:', id);
+        const { id } = req.query; // id = id_cuenta
+        console.log('Generando PDF cuenta de cobro admin para ID:', id);
 
         if (!id) {
             return res.status(400).json({ error: 'ID de cuenta requerido' });
         }
 
-        // === AJUSTA ESTA CONSULTA A TU BASE DE DATOS REAL ===
+        // Consulta ajustada a tu estructura real
         const [rows] = await pool.query(`
             SELECT 
-                cc.id_cuenta_cobro,
+                cc.id_cuenta,
                 cc.mes,
                 cc.anio,
                 cc.total_horas,
@@ -859,37 +859,35 @@ async function generarPDFCuentaCobro(req, res) {
                 u.documento
             FROM cuentas_cobro cc
             JOIN usuarios u ON cc.id_docente = u.id_usuario
-            WHERE cc.id_cuenta_cobro = ?
+            WHERE cc.id_cuenta = ?
         `, [id]);
 
         if (rows.length === 0) {
             return res.status(404).json({ error: 'Cuenta de cobro no encontrada' });
         }
 
-        const cuenta = rows[0];
+        const c = rows[0];
 
         const PDFDocument = require('pdfkit');
         const doc = new PDFDocument({ margin: 50, size: 'A4' });
 
-        // Headers para mostrar en navegador (vista previa)
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `inline; filename=cuenta-cobro-${id}.pdf`);
+        res.setHeader('Content-Disposition', `inline; filename=cuenta-cobro-${c.id_cuenta}.pdf`);
 
         doc.pipe(res);
 
-        // Contenido del PDF
         doc.fontSize(24).text('CUENTA DE COBRO', { align: 'center' });
         doc.moveDown(2);
 
         doc.fontSize(14);
-        doc.text(`Docente: ${cuenta.docente}`);
-        doc.text(`Documento: ${cuenta.documento}`);
-        doc.text(`Período: ${obtenerNombreMes(cuenta.mes)} ${cuenta.anio}`);
+        doc.text(`Docente: ${c.docente}`);
+        doc.text(`Documento: ${c.documento}`);
+        doc.text(`Período: ${obtenerNombreMes(c.mes)} ${c.anio}`);
         doc.moveDown();
-        doc.text(`Total Horas Trabajadas: ${parseFloat(cuenta.total_horas).toFixed(2)}`);
-        doc.text(`Total a Pagar: $${parseInt(cuenta.total_pagar).toLocaleString('es-CO')}`);
+        doc.text(`Total Horas: ${parseFloat(c.total_horas).toFixed(2)}`);
+        doc.text(`Total a Pagar: $${parseInt(c.total_pagar).toLocaleString('es-CO')}`);
         doc.moveDown(2);
-        doc.fontSize(12).text(`Generado el: ${new Date(cuenta.generado_el).toLocaleDateString('es-CO')}`);
+        doc.fontSize(12).text(`Generado el: ${new Date(c.generado_el).toLocaleDateString('es-CO')}`);
 
         doc.end();
 
@@ -906,21 +904,25 @@ function obtenerNombreMes(mes) {
 }
 
 // ========================================
-// GENERAR PDF PLANEADOR
+// GENERAR PDF PLANEADOR (para admin)
 // ========================================
 async function generarPDFPlaneador(req, res) {
     try {
         const { planeador_id } = req.query;
-        console.log('Generando PDF planeador para ID:', planeador_id);
+        console.log('Generando PDF planeador admin para ID:', planeador_id);
 
         if (!planeador_id) {
             return res.status(400).json({ error: 'ID de planeador requerido' });
         }
 
-        // === AJUSTA ESTA CONSULTA A TU TABLA DE PLANEADORES ===
+        // Ajustado a lo más probable según tu sistema
         const [rows] = await pool.query(`
             SELECT 
-                p.*,
+                p.id_planeador,
+                p.mes,
+                p.anio,
+                p.contenido,
+                p.generado_el,
                 u.nombre AS docente,
                 u.documento,
                 g.codigo AS grupo_codigo,
@@ -941,21 +943,21 @@ async function generarPDFPlaneador(req, res) {
         const doc = new PDFDocument({ margin: 50, size: 'A4' });
 
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `inline; filename=planeador-${planeador_id}.pdf`);
+        res.setHeader('Content-Disposition', `inline; filename=planeador-${p.id_planeador}.pdf`);
 
         doc.pipe(res);
 
-        doc.fontSize(24).text('PLANEADOR', { align: 'center' });
+        doc.fontSize(24).text('PLANEADOR DOCENTE', { align: 'center' });
         doc.moveDown(2);
 
         doc.fontSize(14);
         doc.text(`Docente: ${p.docente}`);
         doc.text(`Documento: ${p.documento}`);
-        doc.text(`Grupo: ${p.grupo_codigo ? `${p.grupo_codigo} - ${p.grupo_nombre}` : 'No asignado'}`);
+        doc.text(`Grupo: ${p.grupo_codigo ? `${p.grupo_codigo} - ${p.grupo_nombre}` : 'No especificado'}`);
         doc.text(`Período: ${obtenerNombreMes(p.mes)} ${p.anio}`);
         doc.moveDown(2);
 
-        doc.fontSize(12).text('Contenido del Planeador:', { underline: true });
+        doc.fontSize(12).text('Contenido:', { underline: true });
         doc.moveDown(0.5);
         doc.text(p.contenido || 'Sin contenido registrado');
 
@@ -969,7 +971,6 @@ async function generarPDFPlaneador(req, res) {
         res.status(500).json({ error: 'Error interno al generar PDF', details: error.message });
     }
 }
-
 
 module.exports = {
     obtenerEstadisticas,
