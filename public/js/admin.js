@@ -1534,7 +1534,7 @@ async function cargarCuentasCobro() {
             return;
         }
 
-        tbody.innerHTML = data.cuentas.map(c => `
+                tbody.innerHTML = data.cuentas.map(c => `
             <tr>
                 <td>${c.docente}</td>
                 <td>${c.documento}</td>
@@ -1542,8 +1542,9 @@ async function cargarCuentasCobro() {
                 <td>${parseFloat(c.total_horas).toFixed(2)}</td>
                 <td>${formatearMoneda(c.total_pagar)}</td>
                 <td>${c.generado_el}</td>
-                <td>
-                    <button class="btn-icon" title="Ver PDF (próximamente)">📄</button>
+                <td class="action-btns">
+                    <button class="btn-icon" onclick="abrirVistaPreviaCuenta('/api/admin/cuenta-cobro/pdf?id=${c.id_cuenta_cobro}')" title="Vista Previa">👁️</button>
+                    <a href="/api/admin/cuenta-cobro/pdf?id=${c.id_cuenta_cobro}" target="_blank" class="btn-icon" title="Descargar PDF">📄</a>
                 </td>
             </tr>
         `).join('');
@@ -1732,3 +1733,11 @@ cerrarModal = function(modalId) {
         document.getElementById('iframePlaneadorPreview').src = '';
     }
 };
+
+function abrirVistaPreviaCuenta(pdfUrl) {
+    // Reutilizamos el mismo modal de planeadores
+    document.querySelector('#modalVistaPreviaPlaneador h2').textContent = 'Vista Previa de Cuenta de Cobro';
+    const iframe = document.getElementById('iframePlaneadorPreview');
+    iframe.src = pdfUrl;
+    document.getElementById('modalVistaPreviaPlaneador').classList.add('show');
+}
