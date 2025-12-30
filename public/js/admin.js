@@ -35,7 +35,7 @@ async function verificarSesion() {
 }
 
 // ========================================
-// NAVEGACIÓN POR PESTAÑAS (ÚNICA Y ACTUALIZADA)
+// NAVEGACIÓN POR PESTAÑAS (CORREGIDA PARA MÓVIL)
 // ========================================
 function configurarNavegacion() {
     document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -50,37 +50,39 @@ function configurarNavegacion() {
             btn.classList.add('active');
             document.getElementById(`tab-${tabName}`).classList.add('active');
             
-            // Cerrar menú en móvil (si tienes la función toggleMenu)
+            // CERRAR MENÚ HAMBURGUESA EN MÓVIL
             if (window.innerWidth <= 768) {
-                toggleMenu();
+                document.getElementById('hamburgerBtn').classList.remove('active');
+                document.getElementById('adminNav').classList.remove('show');
+                document.getElementById('navOverlay').classList.remove('show');
             }
             
-            // Cargar datos según la pestaña
-            if (tabName === 'usuarios') {
-                cargarUsuarios();
-                cargarSelectores();
-            } else if (tabName === 'dashboard') {
-                cargarEstadisticas();
-            } else if (tabName === 'grupos') {
-                cargarGrupos();
-                cargarTiposCursoSelect();
-                cargarDocentesSelect();
-            } else if (tabName === 'cursos') {
-                cargarTiposCurso();
-            } else if (tabName === 'bancos') {
-                cargarBancos();
-                cargarTiposCuenta();
-            } else if (tabName === 'perfil') {
-                cargarMiPerfil();
-            } 
-            // NUEVAS PESTAÑAS
-            else if (tabName === 'cuentas-cobro') {
-                cargarDocentesFiltroCuenta();
-                cargarCuentasCobro();
-            } else if (tabName === 'historico') {
-                cargarDocentesFiltro();
-                cargarHistoricoHoras();
-            }
+            // CARGAR DATOS CON DELAY PARA QUE FUNCIONE EN MÓVIL
+            setTimeout(() => {
+                if (tabName === 'dashboard') {
+                    cargarEstadisticas();
+                } else if (tabName === 'usuarios') {
+                    cargarUsuarios();
+                    cargarSelectores();
+                } else if (tabName === 'grupos') {
+                    cargarGrupos();
+                    cargarTiposCursoSelect();
+                    cargarDocentesSelect();
+                } else if (tabName === 'cursos') {
+                    cargarTiposCurso();
+                } else if (tabName === 'bancos') {
+                    cargarBancos();
+                    cargarTiposCuenta();
+                } else if (tabName === 'perfil') {
+                    cargarMiPerfil();
+                } else if (tabName === 'cuentas-cobro') {
+                    cargarDocentesFiltroCuenta();
+                    cargarCuentasCobro();
+                } else if (tabName === 'historico') {
+                    cargarDocentesFiltro();
+                    cargarHistoricoHoras();
+                }
+            }, 200); // 200ms es suficiente para que el DOM se actualice
         });
     });
 
@@ -91,6 +93,15 @@ function configurarNavegacion() {
         document.getElementById('filtroHasta').value = '';
         document.getElementById('filtroDocente').value = '';
         cargarHistoricoHoras();
+    });
+
+    // Eventos de filtro cuentas de cobro
+    document.getElementById('btnFiltrarCuentas')?.addEventListener('click', cargarCuentasCobro);
+    document.getElementById('btnLimpiarCuentas')?.addEventListener('click', () => {
+        document.getElementById('filtroMesCuenta').value = '';
+        document.getElementById('filtroAnioCuenta').value = '';
+        document.getElementById('filtroDocenteCuenta').value = '';
+        cargarCuentasCobro();
     });
 }
 
@@ -593,7 +604,6 @@ async function cargarDatosGrupo(id) {
                 document.getElementById('grupoCodigo').value = grupo.codigo;
                 document.getElementById('grupoNombre').value = grupo.nombre;
                 document.getElementById('grupoTipo').value = grupo.id_tipo;
-                document.getElementById('grupoPrograma').value = grupo.id_programa;
                 document.getElementById('grupoDocente').value = grupo.id_docente;
             }
         }
@@ -615,7 +625,6 @@ document.getElementById('formGrupo')?.addEventListener('submit', async (e) => {
     const tipo = document.getElementById('grupoTipo')?.value;
     const docente = document.getElementById('grupoDocente')?.value;
 
-    // Validar que todos los campos existan y tengan valor
     if (!codigo || !nombre || !tipo || !docente) {
         mostrarNotificacion('Todos los campos son obligatorios', 'error');
         return;
@@ -675,7 +684,6 @@ function abrirModalEstadoGrupo(id, nuevoEstado, codigo) {
         mensaje.innerHTML = `¿Estás segur@ de <strong>desactivar</strong> el grupo:<br><strong>${codigo}</strong>?<br><br>El grupo no aparecerá en los registros pero se mantendrá su historial.`;
     }
     
-    // Cambiar el evento del botón confirmar
     const btnConfirmar = document.getElementById('btnConfirmarEstado');
     const nuevoBtn = btnConfirmar.cloneNode(true);
     btnConfirmar.parentNode.replaceChild(nuevoBtn, btnConfirmar);
@@ -722,7 +730,6 @@ function abrirModalEliminarGrupo(id, codigo) {
     modal.querySelector('h2').textContent = '¡Atención!';
     modal.querySelector('p strong').textContent = `¿Estás segur@ de eliminar el grupo ${codigo}?`;
     
-    // Cambiar el evento del botón confirmar
     const btnConfirmar = document.getElementById('btnConfirmarEliminar');
     const nuevoBtn = btnConfirmar.cloneNode(true);
     btnConfirmar.parentNode.replaceChild(nuevoBtn, btnConfirmar);
@@ -760,39 +767,27 @@ function abrirModalEliminarGrupo(id, codigo) {
 // Cargar selectores para el formulario de grupos
 async function cargarTiposCursoSelect() {
     const selectTipo = document.getElementById('grupoTipo');
-    const selectPrograma = document.getElementById('grupoPrograma');
 
-    // Si los elementos no existen (modal no abierto), salir sin error
-    if (!selectTipo && !selectPrograma) return;
+    if (!selectTipo) return;
 
     try {
         const response = await fetch('/api/admin/tipos-curso');
         const data = await response.json();
         
         if (data.success) {
-            // Llenar Tipo de Curso (Módulo)
-            if (selectTipo) {
-                selectTipo.innerHTML = '<option value="">Seleccionar...</option>' +
-                    data.tipos.filter(t => t.activo).map(t => 
-                        `<option value="${t.id_tipo}">${t.modulo} - ${formatearMoneda(t.valor_hora)}/hora</option>`
-                    ).join('');
-            }
-
-            // Llenar Programa (si existe el select)
-            if (selectPrograma) {
-                selectPrograma.innerHTML = '<option value="">Seleccionar...</option>' +
-                    data.tipos.filter(t => t.activo).map(t => 
-                        `<option value="${t.id_tipo}">${t.programa}</option>`
-                    ).join('');
-            }
+            selectTipo.innerHTML = '<option value="">Seleccionar...</option>' +
+                data.tipos.filter(t => t.activo).map(t => 
+                    `<option value="${t.id_tipo}">${t.modulo} - ${formatearMoneda(t.valor_hora)}/hora</option>`
+                ).join('');
         }
     } catch (error) {
         console.error('Error cargando tipos de curso:', error);
     }
 }
+
 async function cargarDocentesSelect() {
     const select = document.getElementById('grupoDocente');
-    if (!select) return; // Evita error si el modal no está abierto
+    if (!select) return;
 
     try {
         const response = await fetch('/api/admin/docentes');
@@ -902,7 +897,6 @@ document.getElementById('formCurso').addEventListener('submit', async (e) => {
         valor_hora: parseFloat(document.getElementById('cursoValor').value)
     };
     
-    // Validación
     if (datos.valor_hora <= 0) {
         mostrarNotificacion('El valor por hora debe ser mayor a 0', 'error');
         return;
@@ -956,7 +950,6 @@ function abrirModalEstadoCurso(id, nuevoEstado, nombre) {
         mensaje.innerHTML = `¿Estás segur@ de <strong>desactivar</strong> el tipo de curso:<br><strong>${nombre}</strong>?<br><br>Los grupos con este tipo de curso no se verán afectados.`;
     }
     
-    // Cambiar el evento del botón confirmar
     const btnConfirmar = document.getElementById('btnConfirmarEstado');
     const nuevoBtn = btnConfirmar.cloneNode(true);
     btnConfirmar.parentNode.replaceChild(nuevoBtn, btnConfirmar);
@@ -1003,7 +996,6 @@ function abrirModalEliminarCurso(id, nombre) {
     modal.querySelector('h2').textContent = '¡Atención!';
     modal.querySelector('p strong').textContent = `¿Estás segur@ de eliminar el tipo de curso "${nombre}"?`;
     
-    // Cambiar el evento del botón confirmar
     const btnConfirmar = document.getElementById('btnConfirmarEliminar');
     const nuevoBtn = btnConfirmar.cloneNode(true);
     btnConfirmar.parentNode.replaceChild(nuevoBtn, btnConfirmar);
@@ -1513,19 +1505,6 @@ function cambiarMiContrasena() {
     }
 }
 
-// Detectar cuando el usuario hace scroll en el menú (solo móvil)
-if (window.innerWidth <= 768) {
-    const nav = document.querySelector('.admin-nav');
-    
-    nav.addEventListener('scroll', () => {
-        if (nav.scrollLeft + nav.clientWidth >= nav.scrollWidth - 10) {
-            nav.classList.add('scrolled-end');
-        } else {
-            nav.classList.remove('scrolled-end');
-        }
-    });
-}
-
 // ========================================
 // NUEVAS FUNCIONES: CUENTAS DE COBRO Y HISTÓRICO
 // ========================================
@@ -1592,15 +1571,6 @@ async function cargarDocentesFiltroCuenta() {
     }
 }
 
-// Eventos de filtro
-document.getElementById('btnFiltrarCuentas')?.addEventListener('click', cargarCuentasCobro);
-document.getElementById('btnLimpiarCuentas')?.addEventListener('click', () => {
-    document.getElementById('filtroMesCuenta').value = '';
-    document.getElementById('filtroAnioCuenta').value = '';
-    document.getElementById('filtroDocenteCuenta').value = '';
-    cargarCuentasCobro();
-});
-
 async function cargarHistoricoHoras() {
     try {
         const desde = document.getElementById('filtroDesde').value || '';
@@ -1666,11 +1636,9 @@ function formatearFecha(fecha) {
 
     let d;
 
-    // Si ya viene con hora (DATETIME)
     if (fecha.includes('T') || fecha.includes(' ')) {
         d = new Date(fecha);
     } else {
-        // Si es solo DATE (YYYY-MM-DD)
         d = new Date(fecha + 'T00:00:00');
     }
 
