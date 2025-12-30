@@ -906,6 +906,118 @@ exports.generarPDFPlaneador = async (req, res) => {
   }
 };
 
+// ========================================
+// GENERAR PDF CUENTA DE COBRO
+// ========================================
+async function generarPDFCuentaCobro(req, res) {
+    try {
+        const { id } = req.query;
+        if (!id) {
+            return res.status(400).json({ error: 'ID de cuenta requerido' });
+        }
+
+        // Aquí buscas la cuenta de cobro en tu base de datos
+        // Ejemplo con MySQL (ajusta según tu código actual)
+        const [cuenta] = await pool.query(`
+            SELECT cc.*, u.nombre AS docente, u.documento
+            FROM cuentas_cobro cc
+            JOIN usuarios u ON cc.id_docente = u.id_usuario
+            WHERE cc.id_cuenta_cobro = ?
+        `, [id]);
+
+        if (cuenta.length === 0) {
+            return res.status(404).json({ error: 'Cuenta de cobro no encontrada' });
+        }
+
+        const datosCuenta = cuenta[0];
+
+        // Generar PDF con pdfkit
+        const PDFDocument = require('pdfkit');
+        const doc = new PDFDocument({ margin: 50 });
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename=cuenta-cobro-${id}.pdf`);
+
+        doc.pipe(res);
+
+        doc.fontSize(20).text('Cuenta de Cobro', { align: 'center' });
+        doc.moveDown(2);
+
+        doc.fontSize(14).text(`Docente: ${datosCuenta.docente}`);
+        doc.text(`Documento: ${datosCuenta.documento}`);
+        doc.text(`Período: ${obtenerNombreMes(datosCuenta.mes)} ${datosCuenta.anio}`);
+        doc.text(`Total Horas: ${datosCuenta.total_horas}`);
+        doc.text(`Valor por Hora: $${datosCuenta.valor_hora.toLocaleString('es-CO')}`);
+        doc.text(`Total a Pagar: $${datosCuenta.total_pagar.toLocaleString('es-CO')}`);
+        doc.moveDown(3);
+
+        doc.fontSize(12).text(`Generado el: ${new Date(datosCuenta.generado_el).toLocaleDateString('es-CO')}`);
+
+        doc.end();
+
+    } catch (error) {
+        console.error('Error generando PDF cuenta de cobro:', error);
+        res.status(500).json({ error: 'Error interno al generar PDF' });
+    }
+}
+
+// ========================================
+// GENERAR PDF PLANEADOR
+// ========================================
+async function generarPDFPlaneador(req, res) {
+    try {
+        const { planeador_id } = req.query;
+        if (!planeador_id) {
+            return res.status(400).json({ error: 'ID de planeador requerido' });
+        }
+
+        // Buscar el planeador (ajusta según tu tabla)
+        const [planeador] = await pool.query(`
+            SELECT p.*, u.nombre AS docente, u.documento, g.codigo AS grupo_codigo, g.nombre AS grupo_nombre
+            FROM planeadores p
+            JOIN usuarios u ON p.id_docente = u.id_usuario
+            JOIN grupos g ON p.id_grupo = g.id_grupo
+            WHERE p.id_planeador = ?
+        `, [planeador_id]);
+
+        if (planeador.length === 0) {
+            return res.status(404).json({ error: 'Planeador no encontrado' });
+        }
+
+        const datos = planeador[0];
+
+        const PDFDocument = require('pdfkit');
+        const doc = new PDFDocument({ margin: 50 });
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename=planeador-${planeador_id}.pdf`);
+
+        doc.pipe(res);
+
+        doc.fontSize(20).text('Planeador', { align: 'center' });
+        doc.moveDown(2);
+
+        doc.fontSize(14).text(`Docente: ${datos.docente}`);
+        doc.text(`Documento: ${datos.documento}`);
+        doc.text(`Grupo: ${datos.grupo_codigo} - ${datos.grupo_nombre}`);
+        doc.text(`Período: ${obtenerNombreMes(datos.mes)} ${datos.anio}`);
+        doc.moveDown(2);
+
+        doc.fontSize(12).text('Contenido del planeador:', { underline: true });
+        doc.moveDown(0.5);
+        doc.text(datos.contenido || 'Sin contenido registrado');
+
+        doc.moveDown(2);
+        doc.text(`Generado el: ${new Date(datos.generado_el).toLocaleDateString('es-CO')}`);
+
+        doc.end();
+
+    } catch (error) {
+        console.error('Error generando PDF planeador:', error);
+        res.status(500).json({ error: 'Error interno al generar PDF' });
+    }
+}
+
 
 module.exports = {
     obtenerEstadisticas,
