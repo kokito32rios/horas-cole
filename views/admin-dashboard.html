@@ -41,6 +41,9 @@
       <button class="nav-btn" data-tab="cursos">💰 Cursos</button>
       <button class="nav-btn" data-tab="bancos">🏦 Bancos</button>
       <button class="nav-btn" data-tab="cuentas-cobro">
+        <button class="nav-btn" data-tab="planeadores">
+          📝 Planeadores Realizados
+        </button>
         📄 Cuentas de Cobro
       </button>
       <button class="nav-btn" data-tab="historico">⏱️ Histórico Horas</button>
@@ -315,6 +318,80 @@
             <tbody id="tablaCuentasCobro">
               <tr>
                 <td colspan="7" class="text-center">Cargando...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- TAB: PLANEADORES REALIZADOS -->
+      <section id="tab-planeadores" class="tab-content">
+        <h2 class="tab-title">📝 Planeadores Realizados por Docentes</h2>
+
+        <div class="filtros-container">
+          <div
+            class="form-row"
+            style="align-items: end; gap: 1rem; flex-wrap: wrap"
+          >
+            <div class="form-group">
+              <label>Mes</label>
+              <select id="filtroMesPlaneador">
+                <option value="">Todos los meses</option>
+                <option value="1">Enero</option>
+                <option value="2">Febrero</option>
+                <option value="3">Marzo</option>
+                <option value="4">Abril</option>
+                <option value="5">Mayo</option>
+                <option value="6">Junio</option>
+                <option value="7">Julio</option>
+                <option value="8">Agosto</option>
+                <option value="9">Septiembre</option>
+                <option value="10">Octubre</option>
+                <option value="11">Noviembre</option>
+                <option value="12">Diciembre</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Año</label>
+              <input
+                type="number"
+                id="filtroAnioPlaneador"
+                placeholder="Ej: 2025"
+                min="2020"
+              />
+            </div>
+            <div class="form-group">
+              <label>Docente</label>
+              <select id="filtroDocentePlaneador">
+                <option value="">Todos los docentes</option>
+              </select>
+            </div>
+            <div>
+              <button class="btn btn-primary" id="btnFiltrarPlaneadores">
+                🔍 Filtrar
+              </button>
+              <button class="btn btn-secondary" id="btnLimpiarPlaneadores">
+                🗑️ Limpiar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Docente</th>
+                <th>Documento</th>
+                <th>Período</th>
+                <th>Grupo</th>
+                <th>Generado el</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tablaPlaneadores">
+              <tr>
+                <td colspan="6" class="text-center">Cargando...</td>
               </tr>
             </tbody>
           </table>
@@ -846,6 +923,42 @@
           >
             Cancelar
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: Vista Previa de Planeador -->
+    <div id="modalVistaPreviaPlaneador" class="modal">
+      <div class="modal-content modal-large">
+        <span
+          class="close-modal"
+          onclick="cerrarModal('modalVistaPreviaPlaneador')"
+          >&times;</span
+        >
+        <h2
+          style="
+            text-align: center;
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
+          "
+        >
+          Vista Previa del Planeador
+        </h2>
+        <div
+          style="
+            width: 100%;
+            height: 75vh;
+            border: 1px solid var(--border-color);
+            border-radius: 15px;
+            overflow: hidden;
+            background: #f9f9f9;
+          "
+        >
+          <iframe
+            id="iframePlaneadorPreview"
+            src=""
+            style="width: 100%; height: 100%; border: none"
+          ></iframe>
         </div>
       </div>
     </div>
