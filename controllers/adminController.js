@@ -1010,7 +1010,5 @@ module.exports = {
     eliminarTipoCuenta,
     obtenerCuentasCobro,
     obtenerHistoricoHoras,
-    generarPDFCuentaCobro,
-    generarPDFPlaneador,
     generarPDFCuentaCobroAdmin
 };
