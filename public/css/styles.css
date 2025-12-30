@@ -2129,64 +2129,88 @@ body {
 }
 
 /* Contenedor principal de la bienvenida */
-.welcome-container,
-.card,
-.hero-section,
-/* o el class/id que uses para el recuadro grande */
-.main-welcome {
-    min-height: auto !important;
-    /* Elimina altura mínima fija */
-    height: auto !important;
-    /* Deja que se ajuste al contenido */
-    padding: 2rem 1.5rem;
-    /* Espacio interno más cómodo en móvil */
-    margin: 1rem auto;
-    /* Centrado y márgenes */
-    max-width: 90%;
-    /* No ocupe todo el ancho en móvil */
-    border-radius: 20px;
-    /* Mantén el redondeo bonito */
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-}
-
-/* Título principal */
-.welcome-title,
-h1 {
-    font-size: 2rem;
-    /* Más pequeño en móvil */
-    margin-bottom: 1rem;
-}
-
-/* Texto secundario */
-.welcome-subtitle,
-p {
-    font-size: 1.1rem;
-    margin-bottom: 2rem;
-}
-
-/* Media query específica para móviles */
+/* Ajustes específicos para la página de inicio en móvil */
 @media (max-width: 768px) {
 
-    .welcome-title,
-    h1 {
-        font-size: 1.8rem;
+    /* Tarjeta principal de bienvenida */
+    .welcome-card {
+        padding: 2.5rem 1.5rem !important;
+        /* Reduce el padding vertical y horizontal */
+        margin: 1.5rem auto;
+        /* Menos margen superior/inferior */
+        border-radius: 25px;
     }
 
-    .welcome-container {
-        padding: 1.5rem 1rem;
-        margin: 0.5rem auto;
+    /* Título "Bienvenida a tu espacio profesional" */
+    .welcome-card h2 {
+        font-size: 2rem !important;
+        /* Más pequeño y equilibrado */
+        margin-bottom: 1rem;
+        line-height: 1.2;
     }
 
-    .emoji-header {
-        font-size: 2rem;
-        /* Si usas emojis arriba, ajusta tamaño */
+    /* Texto descriptivo */
+    .welcome-text {
+        font-size: 1.1rem !important;
+        margin-bottom: 2rem;
+    }
+
+    /* Decoración de emojis arriba del título */
+    .sparkle-decoration {
+        gap: 12px;
+        top: 15px;
+        right: 20px;
+    }
+
+    .sparkle {
+        font-size: 1.8rem !important;
+    }
+
+    /* Tarjeta inferior "Registro Horas" */
+    .feature-item,
+    .bottom-card {
+        padding: 2rem 1.5rem !important;
+        margin: 1rem auto;
+        max-width: 95%;
+    }
+
+    .feature-item h3 {
+        font-size: 1.6rem;
+        margin-bottom: 0.8rem;
+    }
+
+    .feature-item p {
+        font-size: 1rem;
+        line-height: 1.5;
+    }
+
+    /* Icono de la tarjeta inferior */
+    .feature-icon {
+        font-size: 3.5rem !important;
+        margin-bottom: 1rem;
+    }
+
+    /* Contenedor general para que no haya tanto espacio vacío */
+    .index-content {
+        padding: 2rem 1rem !important;
     }
 }
 
-/* Para la tarjeta inferior "Registro Horas" */
-.bottom-card,
-.feature-card {
-    padding: 1.5rem 1rem;
-    margin: 1rem auto;
-    max-width: 90%;
+/* Para pantallas muy pequeñas (iPhone SE, etc.) */
+@media (max-width: 480px) {
+    .welcome-card {
+        padding: 2rem 1rem !important;
+    }
+
+    .welcome-card h2 {
+        font-size: 1.8rem !important;
+    }
+
+    .sparkle {
+        font-size: 1.6rem !important;
+    }
+
+    .feature-item {
+        padding: 1.8rem 1.2rem !important;
+    }
 }
