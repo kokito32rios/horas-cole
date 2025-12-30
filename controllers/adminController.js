@@ -835,142 +835,148 @@ const obtenerHistoricoHoras = async (req, res) => {
 };
 
 // ========================================
-// GENERAR PDF CUENTA DE COBRO (para admin)
+// PDF CUENTA DE COBRO PARA ADMIN (formato oficial, sin restricción de docente)
 // ========================================
-async function generarPDFCuentaCobro(req, res) {
+exports.generarPDFCuentaCobroAdmin = async (req, res) => {
     try {
-        const { id } = req.query; // id = id_cuenta
-        console.log('Generando PDF cuenta de cobro admin para ID:', id);
-
+        const { id } = req.query;
         if (!id) {
             return res.status(400).json({ error: 'ID de cuenta requerido' });
         }
 
-        // Consulta ajustada a tu estructura real
-        const [rows] = await pool.query(`
+        const [cuentaRows] = await pool.query(`
             SELECT 
                 cc.id_cuenta,
                 cc.mes,
                 cc.anio,
-                cc.total_horas,
                 cc.total_pagar,
                 cc.generado_el,
-                u.nombre AS docente,
-                u.documento
+                u.nombre,
+                u.documento,
+                u.numero_cuenta,
+                b.nombre AS banco,
+                tc.nombre AS tipo_cuenta
             FROM cuentas_cobro cc
             JOIN usuarios u ON cc.id_docente = u.id_usuario
+            LEFT JOIN bancos b ON u.id_banco = b.id_banco
+            LEFT JOIN tipos_cuenta tc ON u.id_tipo_cuenta = tc.id_tipo_cuenta
             WHERE cc.id_cuenta = ?
         `, [id]);
 
-        if (rows.length === 0) {
+        if (cuentaRows.length === 0) {
             return res.status(404).json({ error: 'Cuenta de cobro no encontrada' });
         }
 
-        const c = rows[0];
+        const cuenta = cuentaRows[0];
 
-        const PDFDocument = require('pdfkit');
-        const doc = new PDFDocument({ margin: 50, size: 'A4' });
+        // Meses en mayúsculas para el nombre del archivo y el texto
+        const mesesArray = ['', 'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO',
+                            'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
+        const nombreMes = mesesArray[cuenta.mes];
+
+        const nombreDocente = cuenta.nombre.trim().toUpperCase();
+        const nombreArchivo = `CUENTA DE COBRO ${nombreMes} - ${nombreDocente}.pdf`;
 
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `inline; filename=cuenta-cobro-${c.id_cuenta}.pdf`);
+        res.setHeader('Content-Disposition', `inline; filename="${nombreArchivo}"`);
 
+        const doc = new PDFDocument({ size: 'A4', margin: 50 });
         doc.pipe(res);
 
-        doc.fontSize(24).text('CUENTA DE COBRO', { align: 'center' });
+        const hoy = new Date();
+        const mesesMinus = ['', 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+                            'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+        const fechaTexto = `${hoy.getDate()} de ${mesesMinus[hoy.getMonth() + 1]} de ${hoy.getFullYear()}`;
+        doc.fontSize(12).text(fechaTexto, { align: 'right' });
         doc.moveDown(2);
 
-        doc.fontSize(14);
-        doc.text(`Docente: ${c.docente}`);
-        doc.text(`Documento: ${c.documento}`);
-        doc.text(`Período: ${obtenerNombreMes(c.mes)} ${c.anio}`);
-        doc.moveDown();
-        doc.text(`Total Horas: ${parseFloat(c.total_horas).toFixed(2)}`);
-        doc.text(`Total a Pagar: $${parseInt(c.total_pagar).toLocaleString('es-CO')}`);
+        doc.fontSize(18).text(`CUENTA DE COBRO N° ${String(cuenta.id_cuenta).padStart(3, '0')}`, { align: 'center' });
         doc.moveDown(2);
-        doc.fontSize(12).text(`Generado el: ${new Date(c.generado_el).toLocaleDateString('es-CO')}`);
+
+        doc.fontSize(14).text('COLEGIATURA ANTIOQUEÑA DE BELLEZA SAS', { align: 'center' });
+        doc.fontSize(12).text('NIT: 901.363.247-8', { align: 'center' });
+        doc.moveDown(2);
+
+        doc.fontSize(12).text('DEBE A:', { align: 'center' });
+        doc.text(cuenta.nombre, { align: 'center' });
+        doc.text(`C.C. ${cuenta.documento}`, { align: 'center' });
+        doc.moveDown(2);
+
+        const valorFormateado = new Intl.NumberFormat('es-CO').format(cuenta.total_pagar);
+        const valorEnLetras = numeroALetras(cuenta.total_pagar);
+
+        doc.fontSize(14).text('LA SUMA DE:', { align: 'center' });
+        doc.fontSize(16).text(`$${valorFormateado}`, { align: 'center' });
+        doc.fontSize(12).text(`${valorEnLetras} PESOS COP`, { align: 'center' });
+        doc.moveDown(2);
+
+        doc.fontSize(12).text('Por concepto de:', { align: 'center' });
+        doc.text(`PRESTACIÓN DE SERVICIOS POR HORA CÁTEDRA MES DE ${nombreMes}`, { align: 'center' });
+
+        doc.fontSize(10).text(
+            'Nota aclaratoria: Solicito la aplicación de la tabla de retención en la fuente establecida en el artículo 383 del Estatuto Tributario, la cual se le aplica a los pagos o abonos en cuenta por concepto de ingresos por honorarios y por compensación por servicios personales.',
+            { align: 'justify', indent: 20 }
+        );
+        doc.moveDown(4);
+
+        doc.text('ATENTAMENTE,', { align: 'left' });
+        doc.moveDown(3);
+        doc.text('___________________________', { align: 'left' });
+        doc.text(cuenta.nombre, { align: 'left' });
+        doc.text(`C.c. ${cuenta.documento}`, { align: 'left' });
+        doc.text(`Cuenta ${cuenta.tipo_cuenta || 'ahorros'} ${cuenta.banco || ''} ${cuenta.numero_cuenta || ''}`, { align: 'left' });
 
         doc.end();
 
     } catch (error) {
-        console.error('ERROR generando PDF cuenta de cobro:', error);
-        res.status(500).json({ error: 'Error interno al generar PDF', details: error.message });
+        console.error('Error generando PDF cuenta de cobro para admin:', error);
+        res.status(500).json({ error: 'Error al generar PDF' });
     }
-}
+};
 
-function obtenerNombreMes(mes) {
-    const meses = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
-                   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-    return meses[parseInt(mes)] || 'Mes inválido';
-}
+// Función número a letras
+function numeroALetras(num) {
+    if (num === 0) return 'CERO';
 
-// ========================================
-// GENERAR PDF PLANEADOR (para admin)
-// ========================================
-async function generarPDFPlaneador(req, res) {
-    try {
-        const { planeador_id } = req.query;
-        console.log('Generando PDF planeador admin para ID:', planeador_id);
+    const unidades = ['', 'UN', 'DOS', 'TRES', 'CUATRO', 'CINCO', 'SEIS', 'SIETE', 'OCHO', 'NUEVE'];
+    const especiales = ['', 'ONCE', 'DOCE', 'TRECE', 'CATORCE', 'QUINCE', 'DIECISEIS', 'DIECISIETE', 'DIECIOCHO', 'DIECINUEVE'];
+    const decenas = ['', 'DIEZ', 'VEINTE', 'TREINTA', 'CUARENTA', 'CINCUENTA', 'SESENTA', 'SETENTA', 'OCHENTA', 'NOVENTA'];
+    const centenas = ['', 'CIENTO', 'DOSCIENTOS', 'TRESCIENTOS', 'CUATROCIENTOS', 'QUINIENTOS', 'SEISCIENTOS', 'SETECIENTOS', 'OCHOCIENTOS', 'NOVECIENTOS'];
 
-        if (!planeador_id) {
-            return res.status(400).json({ error: 'ID de planeador requerido' });
+    function convertirMenor1000(n) {
+        if (n === 100) return 'CIEN';
+        if (n < 10) return unidades[n];
+        if (n < 20) return especiales[n - 10];
+        if (n < 100) {
+            const dec = Math.floor(n / 10);
+            const uni = n % 10;
+            return decenas[dec] + (uni > 0 ? ' Y ' + unidades[uni] : '');
         }
-
-        // Ajustado a lo más probable según tu sistema
-        const [rows] = await pool.query(`
-            SELECT 
-                p.id_planeador,
-                p.mes,
-                p.anio,
-                p.contenido,
-                p.generado_el,
-                u.nombre AS docente,
-                u.documento,
-                g.codigo AS grupo_codigo,
-                g.nombre AS grupo_nombre
-            FROM planeadores p
-            JOIN usuarios u ON p.id_docente = u.id_usuario
-            LEFT JOIN grupos g ON p.id_grupo = g.id_grupo
-            WHERE p.id_planeador = ?
-        `, [planeador_id]);
-
-        if (rows.length === 0) {
-            return res.status(404).json({ error: 'Planeador no encontrado' });
-        }
-
-        const p = rows[0];
-
-        const PDFDocument = require('pdfkit');
-        const doc = new PDFDocument({ margin: 50, size: 'A4' });
-
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `inline; filename=planeador-${p.id_planeador}.pdf`);
-
-        doc.pipe(res);
-
-        doc.fontSize(24).text('PLANEADOR DOCENTE', { align: 'center' });
-        doc.moveDown(2);
-
-        doc.fontSize(14);
-        doc.text(`Docente: ${p.docente}`);
-        doc.text(`Documento: ${p.documento}`);
-        doc.text(`Grupo: ${p.grupo_codigo ? `${p.grupo_codigo} - ${p.grupo_nombre}` : 'No especificado'}`);
-        doc.text(`Período: ${obtenerNombreMes(p.mes)} ${p.anio}`);
-        doc.moveDown(2);
-
-        doc.fontSize(12).text('Contenido:', { underline: true });
-        doc.moveDown(0.5);
-        doc.text(p.contenido || 'Sin contenido registrado');
-
-        doc.moveDown(2);
-        doc.text(`Generado el: ${new Date(p.generado_el).toLocaleDateString('es-CO')}`);
-
-        doc.end();
-
-    } catch (error) {
-        console.error('ERROR generando PDF planeador:', error);
-        res.status(500).json({ error: 'Error interno al generar PDF', details: error.message });
+        const cen = Math.floor(n / 100);
+        const resto = n % 100;
+        return centenas[cen] + (resto > 0 ? ' ' + convertirMenor1000(resto) : '');
     }
+
+    let texto = '';
+    const millones = Math.floor(num / 1000000);
+    const miles = Math.floor((num % 1000000) / 1000);
+    const cientos = num % 1000;
+
+    if (millones > 0) {
+        texto += (millones === 1 ? 'UN MILLÓN' : convertirMenor1000(millones) + ' MILLONES') + ' ';
+    }
+
+    if (miles > 0) {
+        texto += (miles === 1 ? 'MIL' : convertirMenor1000(miles) + ' MIL') + ' ';
+    }
+
+    if (cientos > 0) {
+        texto += convertirMenor1000(cientos);
+    }
+
+    return texto.trim();
 }
+
 
 module.exports = {
     obtenerEstadisticas,
@@ -1005,5 +1011,6 @@ module.exports = {
     obtenerCuentasCobro,
     obtenerHistoricoHoras,
     generarPDFCuentaCobro,
-    generarPDFPlaneador
+    generarPDFPlaneador,
+    generarPDFCuentaCobroAdmin
 };
