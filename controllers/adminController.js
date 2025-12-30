@@ -833,132 +833,75 @@ const obtenerHistoricoHoras = async (req, res) => {
     }
 };
 
-// Vista previa y descarga de Cuenta de Cobro
-exports.generarPDFCuentaCobro = async (req, res) => {
-  try {
-    const { id } = req.query; // id de la cuenta de cobro
-
-    // Buscar la cuenta en la BD (ajusta según tu modelo)
-    const cuenta = await CuentaCobro.findById(id).populate('docente'); // Ejemplo con Mongoose, ajusta a tu ORM
-    if (!cuenta) return res.status(404).json({ error: 'Cuenta de cobro no encontrada' });
-
-    const doc = new PDFDocument({ margin: 50 });
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename=cuenta-${cuenta.id}.pdf`); // inline para vista previa
-
-    doc.pipe(res);
-
-    // Título
-    doc.fontSize(20).text('Cuenta de Cobro', { align: 'center' });
-    doc.moveDown();
-
-    // Datos
-    doc.fontSize(12).text(`Docente: ${cuenta.docente.nombre}`);
-    doc.text(`Período: ${cuenta.mes} ${cuenta.anio}`);
-    doc.text(`Total Horas: ${cuenta.total_horas}`);
-    doc.text(`Total a Pagar: $${cuenta.total_pagar}`);
-    doc.moveDown();
-
-    // Detalles de horas (si tienes tabla de detalles)
-    // doc.text('Detalles:', { underline: true });
-    // ... agregar tabla si tienes
-
-    doc.end();
-
-  } catch (error) {
-    console.error('Error generando PDF cuenta:', error);
-    res.status(500).json({ error: 'Error al generar PDF' });
-  }
-};
-
-// Vista previa y descarga de Planeador
-exports.generarPDFPlaneador = async (req, res) => {
-  try {
-    const { planeador_id } = req.query;
-
-    // Buscar el planeador en la BD
-    const planeador = await Planeador.findById(planeador_id).populate('docente'); // Ajusta a tu modelo
-    if (!planeador) return res.status(404).json({ error: 'Planeador no encontrado' });
-
-    const doc = new PDFDocument({ margin: 50 });
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename=planeador-${planeador.id}.pdf`);
-
-    doc.pipe(res);
-
-    doc.fontSize(20).text('Planeador', { align: 'center' });
-    doc.moveDown();
-
-    doc.fontSize(12).text(`Docente: ${planeador.docente.nombre}`);
-    doc.text(`Período: ${planeador.mes} ${planeador.anio}`);
-    doc.text(`Grupo: ${planeador.grupo}`);
-    doc.moveDown();
-
-    // Contenido del planeador (ajusta según tu estructura)
-    // doc.text('Tema:', { underline: true });
-    // doc.text(planeador.contenido);
-
-    doc.end();
-
-  } catch (error) {
-    console.error('Error generando PDF planeador:', error);
-    res.status(500).json({ error: 'Error al generar PDF' });
-  }
-};
-
 // ========================================
 // GENERAR PDF CUENTA DE COBRO
 // ========================================
 async function generarPDFCuentaCobro(req, res) {
     try {
         const { id } = req.query;
+        console.log('Generando PDF cuenta de cobro para ID:', id);
+
         if (!id) {
             return res.status(400).json({ error: 'ID de cuenta requerido' });
         }
 
-        // Aquí buscas la cuenta de cobro en tu base de datos
-        // Ejemplo con MySQL (ajusta según tu código actual)
-        const [cuenta] = await pool.query(`
-            SELECT cc.*, u.nombre AS docente, u.documento
+        // === AJUSTA ESTA CONSULTA A TU BASE DE DATOS REAL ===
+        const [rows] = await pool.query(`
+            SELECT 
+                cc.id_cuenta_cobro,
+                cc.mes,
+                cc.anio,
+                cc.total_horas,
+                cc.total_pagar,
+                cc.generado_el,
+                u.nombre AS docente,
+                u.documento
             FROM cuentas_cobro cc
             JOIN usuarios u ON cc.id_docente = u.id_usuario
             WHERE cc.id_cuenta_cobro = ?
         `, [id]);
 
-        if (cuenta.length === 0) {
+        if (rows.length === 0) {
             return res.status(404).json({ error: 'Cuenta de cobro no encontrada' });
         }
 
-        const datosCuenta = cuenta[0];
+        const cuenta = rows[0];
 
-        // Generar PDF con pdfkit
         const PDFDocument = require('pdfkit');
-        const doc = new PDFDocument({ margin: 50 });
+        const doc = new PDFDocument({ margin: 50, size: 'A4' });
 
+        // Headers para mostrar en navegador (vista previa)
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `inline; filename=cuenta-cobro-${id}.pdf`);
 
         doc.pipe(res);
 
-        doc.fontSize(20).text('Cuenta de Cobro', { align: 'center' });
+        // Contenido del PDF
+        doc.fontSize(24).text('CUENTA DE COBRO', { align: 'center' });
         doc.moveDown(2);
 
-        doc.fontSize(14).text(`Docente: ${datosCuenta.docente}`);
-        doc.text(`Documento: ${datosCuenta.documento}`);
-        doc.text(`Período: ${obtenerNombreMes(datosCuenta.mes)} ${datosCuenta.anio}`);
-        doc.text(`Total Horas: ${datosCuenta.total_horas}`);
-        doc.text(`Valor por Hora: $${datosCuenta.valor_hora.toLocaleString('es-CO')}`);
-        doc.text(`Total a Pagar: $${datosCuenta.total_pagar.toLocaleString('es-CO')}`);
-        doc.moveDown(3);
-
-        doc.fontSize(12).text(`Generado el: ${new Date(datosCuenta.generado_el).toLocaleDateString('es-CO')}`);
+        doc.fontSize(14);
+        doc.text(`Docente: ${cuenta.docente}`);
+        doc.text(`Documento: ${cuenta.documento}`);
+        doc.text(`Período: ${obtenerNombreMes(cuenta.mes)} ${cuenta.anio}`);
+        doc.moveDown();
+        doc.text(`Total Horas Trabajadas: ${parseFloat(cuenta.total_horas).toFixed(2)}`);
+        doc.text(`Total a Pagar: $${parseInt(cuenta.total_pagar).toLocaleString('es-CO')}`);
+        doc.moveDown(2);
+        doc.fontSize(12).text(`Generado el: ${new Date(cuenta.generado_el).toLocaleDateString('es-CO')}`);
 
         doc.end();
 
     } catch (error) {
-        console.error('Error generando PDF cuenta de cobro:', error);
-        res.status(500).json({ error: 'Error interno al generar PDF' });
+        console.error('ERROR generando PDF cuenta de cobro:', error);
+        res.status(500).json({ error: 'Error interno al generar PDF', details: error.message });
     }
+}
+
+function obtenerNombreMes(mes) {
+    const meses = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
+                   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    return meses[parseInt(mes)] || 'Mes inválido';
 }
 
 // ========================================
@@ -967,54 +910,62 @@ async function generarPDFCuentaCobro(req, res) {
 async function generarPDFPlaneador(req, res) {
     try {
         const { planeador_id } = req.query;
+        console.log('Generando PDF planeador para ID:', planeador_id);
+
         if (!planeador_id) {
             return res.status(400).json({ error: 'ID de planeador requerido' });
         }
 
-        // Buscar el planeador (ajusta según tu tabla)
-        const [planeador] = await pool.query(`
-            SELECT p.*, u.nombre AS docente, u.documento, g.codigo AS grupo_codigo, g.nombre AS grupo_nombre
+        // === AJUSTA ESTA CONSULTA A TU TABLA DE PLANEADORES ===
+        const [rows] = await pool.query(`
+            SELECT 
+                p.*,
+                u.nombre AS docente,
+                u.documento,
+                g.codigo AS grupo_codigo,
+                g.nombre AS grupo_nombre
             FROM planeadores p
             JOIN usuarios u ON p.id_docente = u.id_usuario
-            JOIN grupos g ON p.id_grupo = g.id_grupo
+            LEFT JOIN grupos g ON p.id_grupo = g.id_grupo
             WHERE p.id_planeador = ?
         `, [planeador_id]);
 
-        if (planeador.length === 0) {
+        if (rows.length === 0) {
             return res.status(404).json({ error: 'Planeador no encontrado' });
         }
 
-        const datos = planeador[0];
+        const p = rows[0];
 
         const PDFDocument = require('pdfkit');
-        const doc = new PDFDocument({ margin: 50 });
+        const doc = new PDFDocument({ margin: 50, size: 'A4' });
 
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `inline; filename=planeador-${planeador_id}.pdf`);
 
         doc.pipe(res);
 
-        doc.fontSize(20).text('Planeador', { align: 'center' });
+        doc.fontSize(24).text('PLANEADOR', { align: 'center' });
         doc.moveDown(2);
 
-        doc.fontSize(14).text(`Docente: ${datos.docente}`);
-        doc.text(`Documento: ${datos.documento}`);
-        doc.text(`Grupo: ${datos.grupo_codigo} - ${datos.grupo_nombre}`);
-        doc.text(`Período: ${obtenerNombreMes(datos.mes)} ${datos.anio}`);
+        doc.fontSize(14);
+        doc.text(`Docente: ${p.docente}`);
+        doc.text(`Documento: ${p.documento}`);
+        doc.text(`Grupo: ${p.grupo_codigo ? `${p.grupo_codigo} - ${p.grupo_nombre}` : 'No asignado'}`);
+        doc.text(`Período: ${obtenerNombreMes(p.mes)} ${p.anio}`);
         doc.moveDown(2);
 
-        doc.fontSize(12).text('Contenido del planeador:', { underline: true });
+        doc.fontSize(12).text('Contenido del Planeador:', { underline: true });
         doc.moveDown(0.5);
-        doc.text(datos.contenido || 'Sin contenido registrado');
+        doc.text(p.contenido || 'Sin contenido registrado');
 
         doc.moveDown(2);
-        doc.text(`Generado el: ${new Date(datos.generado_el).toLocaleDateString('es-CO')}`);
+        doc.text(`Generado el: ${new Date(p.generado_el).toLocaleDateString('es-CO')}`);
 
         doc.end();
 
     } catch (error) {
-        console.error('Error generando PDF planeador:', error);
-        res.status(500).json({ error: 'Error interno al generar PDF' });
+        console.error('ERROR generando PDF planeador:', error);
+        res.status(500).json({ error: 'Error interno al generar PDF', details: error.message });
     }
 }
 
