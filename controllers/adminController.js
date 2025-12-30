@@ -3,6 +3,7 @@ const bcrypt = require('bcrypt');
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
+const pool = require('../config/database');
 
 // ========================================
 // ESTADÍSTICAS DEL DASHBOARD
