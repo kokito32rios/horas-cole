@@ -1,5 +1,8 @@
 const db = require('../config/database');
 const bcrypt = require('bcrypt');
+const PDFDocument = require('pdfkit');
+const fs = require('fs');
+const path = require('path');
 
 // ========================================
 // ESTADÍSTICAS DEL DASHBOARD
@@ -830,7 +833,80 @@ const obtenerHistoricoHoras = async (req, res) => {
     }
 };
 
-// === AGREGA ESTAS DOS AL module.exports ===
+// Vista previa y descarga de Cuenta de Cobro
+exports.generarPDFCuentaCobro = async (req, res) => {
+  try {
+    const { id } = req.query; // id de la cuenta de cobro
+
+    // Buscar la cuenta en la BD (ajusta según tu modelo)
+    const cuenta = await CuentaCobro.findById(id).populate('docente'); // Ejemplo con Mongoose, ajusta a tu ORM
+    if (!cuenta) return res.status(404).json({ error: 'Cuenta de cobro no encontrada' });
+
+    const doc = new PDFDocument({ margin: 50 });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename=cuenta-${cuenta.id}.pdf`); // inline para vista previa
+
+    doc.pipe(res);
+
+    // Título
+    doc.fontSize(20).text('Cuenta de Cobro', { align: 'center' });
+    doc.moveDown();
+
+    // Datos
+    doc.fontSize(12).text(`Docente: ${cuenta.docente.nombre}`);
+    doc.text(`Período: ${cuenta.mes} ${cuenta.anio}`);
+    doc.text(`Total Horas: ${cuenta.total_horas}`);
+    doc.text(`Total a Pagar: $${cuenta.total_pagar}`);
+    doc.moveDown();
+
+    // Detalles de horas (si tienes tabla de detalles)
+    // doc.text('Detalles:', { underline: true });
+    // ... agregar tabla si tienes
+
+    doc.end();
+
+  } catch (error) {
+    console.error('Error generando PDF cuenta:', error);
+    res.status(500).json({ error: 'Error al generar PDF' });
+  }
+};
+
+// Vista previa y descarga de Planeador
+exports.generarPDFPlaneador = async (req, res) => {
+  try {
+    const { planeador_id } = req.query;
+
+    // Buscar el planeador en la BD
+    const planeador = await Planeador.findById(planeador_id).populate('docente'); // Ajusta a tu modelo
+    if (!planeador) return res.status(404).json({ error: 'Planeador no encontrado' });
+
+    const doc = new PDFDocument({ margin: 50 });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename=planeador-${planeador.id}.pdf`);
+
+    doc.pipe(res);
+
+    doc.fontSize(20).text('Planeador', { align: 'center' });
+    doc.moveDown();
+
+    doc.fontSize(12).text(`Docente: ${planeador.docente.nombre}`);
+    doc.text(`Período: ${planeador.mes} ${planeador.anio}`);
+    doc.text(`Grupo: ${planeador.grupo}`);
+    doc.moveDown();
+
+    // Contenido del planeador (ajusta según tu estructura)
+    // doc.text('Tema:', { underline: true });
+    // doc.text(planeador.contenido);
+
+    doc.end();
+
+  } catch (error) {
+    console.error('Error generando PDF planeador:', error);
+    res.status(500).json({ error: 'Error al generar PDF' });
+  }
+};
+
+
 module.exports = {
     obtenerEstadisticas,
     obtenerUsuarios,
@@ -861,7 +937,8 @@ module.exports = {
     eliminarTipoCurso,
     eliminarBanco,
     eliminarTipoCuenta,
-    // === NUEVAS FUNCIONES ===
     obtenerCuentasCobro,
-    obtenerHistoricoHoras
+    obtenerHistoricoHoras,
+    generarPDFCuentaCobro,
+    generarPDFPlaneador
 };

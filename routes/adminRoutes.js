@@ -66,4 +66,12 @@ router.delete('/grupos/:id', adminController.eliminarGrupo);
 router.get('/docentes', adminController.obtenerDocentes);
 router.get('/roles', adminController.obtenerRoles);
 
+// ========================================
+// PDF DE CUENTA DE COBRO (para admin)
+router.get('/cuenta-cobro/pdf', adminController.generarPDFCuentaCobro);
+
+// ========================================
+// PDF DE PLANEADOR (para admin)
+router.get('/planeador/pdf', adminController.generarPDFPlaneador);
+
 module.exports = router;
