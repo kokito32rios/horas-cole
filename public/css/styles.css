@@ -2214,3 +2214,51 @@ body {
         padding: 1.8rem 1.2rem !important;
     }
 }
+
+/* Botones grandes en el header superior */
+.header-cta-buttons {
+    display: flex;
+    gap: 2rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 3rem;
+    padding: 0 2rem;
+    z-index: 1;
+    position: relative;
+}
+
+.header-cta-buttons .btn {
+    padding: 1.3rem 3rem;
+    font-size: 1.3rem;
+    min-width: 220px;
+    border-radius: 50px;
+    box-shadow: var(--shadow-hover);
+    font-weight: 700;
+}
+
+.header-cta-buttons .btn:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 30px rgba(87, 8, 97, 0.4);
+}
+
+/* En móvil: apilar y ajustar tamaño */
+@media (max-width: 768px) {
+    .header-cta-buttons {
+        flex-direction: column;
+        align-items: center;
+        gap: 1.5rem;
+        margin-top: 2.5rem;
+    }
+
+    .header-cta-buttons .btn {
+        width: 85%;
+        max-width: 320px;
+        padding: 1.2rem 2.5rem;
+        font-size: 1.2rem;
+    }
+
+    .index-header {
+        padding-bottom: 5rem;
+        /* Más espacio abajo para los botones */
+    }
+}
