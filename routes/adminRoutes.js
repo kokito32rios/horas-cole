@@ -67,8 +67,9 @@ router.get('/docentes', adminController.obtenerDocentes);
 router.get('/roles', adminController.obtenerRoles);
 
 // ========================================
-// PDF DE CUENTA DE COBRO (para admin)
-router.get('/cuenta-cobro/pdf', adminController.generarPDFCuentaCobro);
+// PDF de Cuenta de Cobro - usa el mismo formato oficial del docente
+router.get('/cuenta-cobro/pdf', require('../controllers/docenteController').descargarCuentaPDF);
+router.get('/cuenta-cobro/ver-pdf', require('../controllers/docenteController').verCuentaPDF);
 
 // ========================================
 // PDF DE PLANEADOR (para admin)

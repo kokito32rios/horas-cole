@@ -1543,8 +1543,8 @@ async function cargarCuentasCobro() {
         <td>${formatearMoneda(c.total_pagar)}</td>
         <td>${c.generado_el}</td>
         <td class="action-btns">
-            <button class="btn-icon" onclick="abrirVistaPreviaCuenta('/api/admin/cuenta-cobro/pdf?id=${c.id_cuenta}')" title="Vista Previa">👁️</button>
-            <a href="/api/admin/cuenta-cobro/pdf?id=${c.id_cuenta}" target="_blank" class="btn-icon" title="Descargar PDF">📄</a>
+                <button class="btn-icon" onclick="abrirVistaPreviaCuenta('/api/admin/cuenta-cobro/pdf?id=${c.id_cuenta}')" title="Vista Previa">👁️</button>
+                <a href="/api/admin/cuenta-cobro/pdf?id=${c.id_cuenta}" target="_blank" class="btn-icon" title="Descargar PDF">📄</a>
         </td>
     </tr>
 `).join('');
@@ -1735,7 +1735,6 @@ cerrarModal = function(modalId) {
 };
 
 function abrirVistaPreviaCuenta(pdfUrl) {
-    // Reutilizamos el mismo modal de planeadores
     document.querySelector('#modalVistaPreviaPlaneador h2').textContent = 'Vista Previa de Cuenta de Cobro';
     const iframe = document.getElementById('iframePlaneadorPreview');
     iframe.src = pdfUrl;
