@@ -2127,3 +2127,66 @@ body {
         font-weight: 700;
     }
 }
+
+/* Contenedor principal de la bienvenida */
+.welcome-container,
+.card,
+.hero-section,
+/* o el class/id que uses para el recuadro grande */
+.main-welcome {
+    min-height: auto !important;
+    /* Elimina altura mínima fija */
+    height: auto !important;
+    /* Deja que se ajuste al contenido */
+    padding: 2rem 1.5rem;
+    /* Espacio interno más cómodo en móvil */
+    margin: 1rem auto;
+    /* Centrado y márgenes */
+    max-width: 90%;
+    /* No ocupe todo el ancho en móvil */
+    border-radius: 20px;
+    /* Mantén el redondeo bonito */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Título principal */
+.welcome-title,
+h1 {
+    font-size: 2rem;
+    /* Más pequeño en móvil */
+    margin-bottom: 1rem;
+}
+
+/* Texto secundario */
+.welcome-subtitle,
+p {
+    font-size: 1.1rem;
+    margin-bottom: 2rem;
+}
+
+/* Media query específica para móviles */
+@media (max-width: 768px) {
+
+    .welcome-title,
+    h1 {
+        font-size: 1.8rem;
+    }
+
+    .welcome-container {
+        padding: 1.5rem 1rem;
+        margin: 0.5rem auto;
+    }
+
+    .emoji-header {
+        font-size: 2rem;
+        /* Si usas emojis arriba, ajusta tamaño */
+    }
+}
+
+/* Para la tarjeta inferior "Registro Horas" */
+.bottom-card,
+.feature-card {
+    padding: 1.5rem 1rem;
+    margin: 1rem auto;
+    max-width: 90%;
+}
