@@ -96,12 +96,10 @@ const crearUsuario = async (req, res) => {
     try {
         const { nombre, documento, email, telefono, password, id_rol, id_banco, id_tipo_cuenta, numero_cuenta } = req.body;
         
-        // Validaciones
         if (!nombre || !documento || !password || !id_rol) {
             return res.status(400).json({ error: 'Faltan datos obligatorios' });
         }
         
-        // Verificar si el documento ya existe
         const [existente] = await db.query(
             'SELECT id_usuario FROM usuarios WHERE documento = ?',
             [documento]
@@ -111,10 +109,8 @@ const crearUsuario = async (req, res) => {
             return res.status(400).json({ error: 'El documento ya está registrado' });
         }
         
-        // Encriptar contraseña
         const passwordHash = await bcrypt.hash(password, 10);
         
-        // Insertar usuario
         const [result] = await db.query(
             `INSERT INTO usuarios 
              (nombre, documento, email, telefono, password, id_rol, id_banco, id_tipo_cuenta, numero_cuenta) 
@@ -139,12 +135,10 @@ const actualizarUsuario = async (req, res) => {
         const { id } = req.params;
         const { nombre, documento, email, telefono, id_rol, id_banco, id_tipo_cuenta, numero_cuenta } = req.body;
         
-        // Validaciones
         if (!nombre || !documento || !id_rol) {
             return res.status(400).json({ error: 'Faltan datos obligatorios' });
         }
         
-        // Verificar si el documento ya existe en otro usuario
         const [existente] = await db.query(
             'SELECT id_usuario FROM usuarios WHERE documento = ? AND id_usuario != ?',
             [documento, id]
@@ -154,7 +148,6 @@ const actualizarUsuario = async (req, res) => {
             return res.status(400).json({ error: 'El documento ya está registrado en otro usuario' });
         }
         
-        // Actualizar usuario
         await db.query(
             `UPDATE usuarios SET 
              nombre = ?, documento = ?, email = ?, telefono = ?, 
@@ -490,7 +483,6 @@ const crearGrupo = async (req, res) => {
             return res.status(400).json({ error: 'Todos los campos son obligatorios' });
         }
         
-        // Verificar si el código ya existe
         const [existente] = await db.query(
             'SELECT id_grupo FROM grupos WHERE codigo = ?',
             [codigo]
@@ -522,7 +514,6 @@ const actualizarGrupo = async (req, res) => {
         const { id } = req.params;
         const { codigo, nombre, id_tipo, id_docente } = req.body;
         
-        // Verificar si el código ya existe en otro grupo
         const [existente] = await db.query(
             'SELECT id_grupo FROM grupos WHERE codigo = ? AND id_grupo != ?',
             [codigo, id]
@@ -601,7 +592,6 @@ const eliminarUsuario = async (req, res) => {
     try {
         const { id } = req.params;
         
-        // Verificar que el usuario existe
         const [usuario] = await db.query(
             'SELECT nombre FROM usuarios WHERE id_usuario = ?',
             [id]
@@ -611,7 +601,6 @@ const eliminarUsuario = async (req, res) => {
             return res.status(404).json({ error: 'Usuario no encontrado' });
         }
         
-        // Eliminar usuario
         await db.query('DELETE FROM usuarios WHERE id_usuario = ?', [id]);
         
         res.json({ 
@@ -727,10 +716,6 @@ const eliminarTipoCuenta = async (req, res) => {
         res.status(500).json({ error: 'Error al eliminar tipo de cuenta' });
     }
 };
-
-
-
-
 
 // ========================================
 // CUENTAS DE COBRO GENERADAS
@@ -869,7 +854,6 @@ exports.generarPDFCuentaCobroAdmin = async (req, res) => {
 
         const cuenta = cuentaRows[0];
 
-        // Meses en mayúsculas para el nombre del archivo y el texto
         const mesesArray = ['', 'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO',
                             'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
         const nombreMes = mesesArray[cuenta.mes];
@@ -976,7 +960,6 @@ function numeroALetras(num) {
 
     return texto.trim();
 }
-
 
 module.exports = {
     obtenerEstadisticas,
