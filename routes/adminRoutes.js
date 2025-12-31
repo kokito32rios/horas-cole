@@ -25,7 +25,6 @@ router.get('/cuentas-cobro', adminController.obtenerCuentasCobro);
 router.get('/historico-horas', adminController.obtenerHistoricoHoras);
 
 
-module.exports = router;
 
 // ========================================
 // GESTIÓN BANCARIA
@@ -69,7 +68,7 @@ router.get('/roles', adminController.obtenerRoles);
 // ========================================
 // PDF DE CUENTA DE COBRO PARA ADMIN (formato oficial, sin restricción)
 // ========================================
-router.get('/cuenta-cobro/pdf', adminController.generarPDFCuentaAdmin );
+router.get('/cuenta-cobro/pdf', adminController.generarPDFCuentaAdmin);
 
 
 
