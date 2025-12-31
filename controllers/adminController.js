@@ -822,7 +822,7 @@ const obtenerHistoricoHoras = async (req, res) => {
 // ========================================
 // PDF CUENTA DE COBRO PARA ADMIN (formato oficial, sin restricción de docente)
 // ========================================
-exports.generarPDFCuentaCobroAdmin = async (req, res) => {
+exports.generarPDFCuentaAdmin = async (req, res) => {
     try {
         const { id } = req.query;
         if (!id) {
@@ -993,5 +993,5 @@ module.exports = {
     eliminarTipoCuenta,
     obtenerCuentasCobro,
     obtenerHistoricoHoras,
-    generarPDFCuentaCobroAdmin
+    generarPDFCuentaAdmin
 };
