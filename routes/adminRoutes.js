@@ -71,8 +71,6 @@ router.get('/roles', adminController.obtenerRoles);
 // ========================================
 router.get('/cuenta-cobro/pdf', adminController.generarPDFCuentaCobroAdmin);
 
-// ========================================
-// PDF DE PLANEADOR (para admin)
-router.get('/planeador/pdf', adminController.generarPDFPlaneador);
+
 
 module.exports = router;
