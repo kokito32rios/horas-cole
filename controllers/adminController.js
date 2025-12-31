@@ -822,7 +822,7 @@ const obtenerHistoricoHoras = async (req, res) => {
 // ========================================
 // PDF CUENTA DE COBRO PARA ADMIN (formato oficial, sin restricción de docente)
 // ========================================
-exports.generarPDFCuentaAdmin = async (req, res) => {
+const generarPDFCuentaAdmin = async (req, res) => {
     try {
         const { id } = req.query;
         if (!id) {
