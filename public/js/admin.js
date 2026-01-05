@@ -83,7 +83,7 @@ function configurarNavegacion() {
                     cargarHistoricoHoras();
                 } else if (tabName === 'planeadores') {
                     cargarDocentesFiltroPlaneador();
-                    cargarPlaneadores();
+                    cargarPeriodosPlaneador();
                 }
             }, 200); // 200ms es suficiente para que el DOM se actualice
         });
@@ -1658,49 +1658,42 @@ function formatearFecha(fecha) {
 // ========================================
 // PLANEADORES REALIZADOS
 // ========================================
-async function cargarPlaneadores() {
+async function cargarPeriodosPlaneador() {
     try {
-        const mes = document.getElementById('filtroMesPlaneador').value || '';
-        const anio = document.getElementById('filtroAnioPlaneador').value || '';
-        const docente_id = document.getElementById('filtroDocentePlaneador').value || '';
-
-        let url = '/api/admin/planeadores';
-        const params = new URLSearchParams();
-        if (mes) params.append('mes', mes);
-        if (anio) params.append('anio', anio);
-        if (docente_id) params.append('docente_id', docente_id);
-        if (params.toString()) url += '?' + params.toString();
+        const docente_id = document.getElementById('filtroDocentePlaneador')?.value || '';
+        let url = '/api/admin/periodos-planeador';
+        if (docente_id) url += `?docente_id=${docente_id}`;
 
         const response = await fetch(url);
         const data = await response.json();
 
         const tbody = document.getElementById('tablaPlaneadores');
 
-        if (!data.success || data.planeadores.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center">No hay planeadores generados con los filtros aplicados</td></tr>';
+        if (!data.success || data.periodos.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center">No hay períodos con registros de horas</td></tr>';
             return;
         }
 
-        tbody.innerHTML = data.planeadores.map(p => `
+        const meses = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+        tbody.innerHTML = data.periodos.map(p => `
             <tr>
                 <td>${p.docente}</td>
                 <td>${p.documento}</td>
-                <td><strong>${obtenerNombreMes(p.mes)} ${p.anio}</strong></td>
-                <td>${p.grupo_codigo} - ${p.grupo_nombre}</td>
-                <td>${p.generado_el}</td>
+                <td><strong>${meses[p.mes]} ${p.anio}</strong></td>
+                <td>${p.grupos.length} grupo(s)</td>
                 <td class="action-btns">
-                    <button class="btn-icon" onclick="abrirVistaPreviaPlaneador('/api/admin/planeador/pdf?planeador_id=${p.id_planeador}')" title="Vista Previa">👁️</button>
-                    <a href="/api/admin/planeador/pdf?planeador_id=${p.id_planeador}" target="_blank" class="btn-icon" title="Descargar PDF">📄</a>
+                    <button class="btn-icon" onclick="abrirVistaPreviaPlaneador('/api/admin/planeador/pdf?docente_id=${p.docente_id}&mes=${p.mes}&anio=${p.anio}')" title="Vista Previa">👁️</button>
+                    <a href="/api/admin/planeador/pdf?docente_id=${p.docente_id}&mes=${p.mes}&anio=${p.anio}" target="_blank" class="btn-icon" title="Descargar PDF">📄</a>
                 </td>
             </tr>
         `).join('');
 
     } catch (error) {
-        console.error('Error cargando planeadores:', error);
-        mostrarNotificacion('Error al cargar planeadores', 'error');
+        console.error('Error:', error);
+        mostrarNotificacion('Error al cargar períodos', 'error');
     }
 }
-
 async function cargarDocentesFiltroPlaneador() {
     try {
         const response = await fetch('/api/admin/docentes');

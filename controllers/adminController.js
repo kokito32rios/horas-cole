@@ -962,145 +962,159 @@ function numeroALetras(num) {
 }
 
 // ========================================
-// PDF PLANEADOR PARA ADMIN (formato bonito, sin restricción)
+// OBTENER PERÍODOS CON REGISTROS PARA PLANEADOR (para admin)
 // ========================================
-const generarPDFPlaneadorAdmin = async (req, res) => {
+const obtenerPeriodosPlaneador = async (req, res) => {
     try {
-        const { planeador_id } = req.query;
-        if (!planeador_id) {
-            return res.status(400).json({ error: 'ID de planeador requerido' });
-        }
-
-        const [rows] = await pool.query(`
-            SELECT 
-                p.id_planeador,
-                p.mes,
-                p.anio,
-                p.contenido,
-                p.generado_el,
-                u.nombre AS docente,
-                u.documento,
-                g.codigo AS grupo_codigo,
-                g.nombre AS grupo_nombre
-            FROM planeadores p
-            JOIN usuarios u ON p.id_docente = u.id_usuario
-            LEFT JOIN grupos g ON p.id_grupo = g.id_grupo
-            WHERE p.id_planeador = ?
-        `, [planeador_id]);
-
-        if (rows.length === 0) {
-            return res.status(404).json({ error: 'Planeador no encontrado' });
-        }
-
-        const p = rows[0];
-
-        const mesesArray = ['', 'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO',
-                            'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
-        const nombreMes = mesesArray[p.mes];
-
-        const nombreArchivo = `PLANEADOR ${nombreMes} ${p.anio} - ${p.docente.toUpperCase()}.pdf`;
-
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `inline; filename="${nombreArchivo}"`);
-
-        const doc = new PDFDocument({ size: 'A4', margin: 50 });
-        doc.pipe(res);
-
-        const hoy = new Date();
-        const mesesMinus = ['', 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
-                            'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-        const fechaTexto = `${hoy.getDate()} de ${mesesMinus[hoy.getMonth() + 1]} de ${hoy.getFullYear()}`;
-        doc.fontSize(12).text(fechaTexto, { align: 'right' });
-        doc.moveDown(2);
-
-        doc.fontSize(20).text('PLANEADOR DOCENTE', { align: 'center' });
-        doc.moveDown(2);
-
-        doc.fontSize(14).text('COLEGIATURA ANTIOQUEÑA DE BELLEZA SAS', { align: 'center' });
-        doc.fontSize(12).text('NIT: 901.363.247-8', { align: 'center' });
-        doc.moveDown(3);
-
-        doc.fontSize(12).text('Docente:', { underline: true });
-        doc.fontSize(14).text(p.docente.toUpperCase());
-        doc.text(`Documento: ${p.documento}`);
-        doc.moveDown();
-
-        doc.text('Grupo:', { underline: true });
-        doc.fontSize(14).text(p.grupo_codigo ? `${p.grupo_codigo} - ${p.grupo_nombre}` : 'No asignado');
-        doc.moveDown();
-
-        doc.text('Período:', { underline: true });
-        doc.fontSize(14).text(`${nombreMes} ${p.anio}`);
-        doc.moveDown(2);
-
-        doc.fontSize(12).text('Contenido del Planeador:', { underline: true });
-        doc.moveDown(0.5);
-        doc.fontSize(11).text(p.contenido || 'Sin contenido registrado', { align: 'justify' });
-
-        doc.moveDown(4);
-        doc.fontSize(12).text(`Generado el: ${new Date(p.generado_el).toLocaleDateString('es-CO')}`);
-
-        doc.moveDown(4);
-        doc.text('Firma Docente:', { align: 'left' });
-        doc.moveDown(4);
-        doc.text('___________________________', { align: 'left' });
-        doc.text(p.docente, { align: 'left' });
-
-        doc.end();
-
-    } catch (error) {
-        console.error('Error generando PDF planeador para admin:', error);
-        res.status(500).json({ error: 'Error al generar PDF' });
-    }
-};
-
-// ========================================
-// OBTENER PLANEADORES GENERADOS (para admin)
-// ========================================
-const obtenerPlaneadores = async (req, res) => {
-    try {
-        const { mes, anio, docente_id } = req.query;
+        const { docente_id } = req.query;
 
         let query = `
-            SELECT 
-                p.id_planeador,
+            SELECT DISTINCT
+                MONTH(rh.fecha) AS mes,
+                YEAR(rh.fecha) AS anio,
+                u.id_usuario AS docente_id,
                 u.nombre AS docente,
-                u.documento,
-                p.mes,
-                p.anio,
-                g.codigo AS grupo_codigo,
-                g.nombre AS grupo_nombre,
-                DATE_FORMAT(p.generado_el, '%d/%m/%Y %H:%i') AS generado_el
-            FROM planeadores p
-            JOIN usuarios u ON p.id_docente = u.id_usuario
-            LEFT JOIN grupos g ON p.id_grupo = g.id_grupo
+                u.documento
+            FROM registros_horas rh
+            JOIN usuarios u ON rh.id_docente = u.id_usuario
             WHERE u.id_rol = 2
         `;
         const params = [];
 
-        if (mes) {
-            query += ' AND p.mes = ?';
-            params.push(mes);
-        }
-        if (anio) {
-            query += ' AND p.anio = ?';
-            params.push(anio);
-        }
-        if (docente_id) {
-            query += ' AND p.id_docente = ?';
-            params.push(docente_id);
+        if (docente_id && docente_id !== '') {
+            query += ' AND u.id_usuario = ?';
+            params.push(parseInt(docente_id));
         }
 
-        query += ' ORDER BY p.anio DESC, p.mes DESC, u.nombre';
+        query += ' ORDER BY anio DESC, mes DESC, u.nombre';
 
-        const [planeadores] = await db.query(query, params);
+        const [periodos] = await db.query(query, params);
 
-        res.json({ success: true, planeadores });
+        res.json({ success: true, periodos });
     } catch (error) {
-        console.error('Error obteniendo planeadores:', error);
-        res.status(500).json({ error: 'Error al obtener planeadores' });
+        console.error('Error obteniendo períodos para planeador:', error);
+        res.status(500).json({ error: 'Error al obtener períodos' });
     }
 };
+
+// ========================================
+// GENERAR PDF PLANEADOR PARA ADMIN (en tiempo real, como el Excel del docente)
+// ========================================
+const generarPDFPlaneadorAdmin = async (req, res) => {
+    try {
+        const { docente_id, mes, anio } = req.query;
+        if (!docente_id || !mes || !anio) {
+            return res.status(400).json({ error: 'Parámetros requeridos: docente_id, mes, anio' });
+        }
+
+        const mesNum = parseInt(mes);
+        const anioNum = parseInt(anio);
+
+        // Obtener docente
+        const [docenteRows] = await pool.query('SELECT nombre, documento FROM usuarios WHERE id_usuario = ?', [docente_id]);
+        if (docenteRows.length === 0) return res.status(404).json({ error: 'Docente no encontrado' });
+        const docente = docenteRows[0];
+
+        // Obtener todos los grupos del docente
+        const [grupos] = await pool.query(`
+            SELECT g.id_grupo, g.codigo, g.nombre AS grupo_nombre, tc.programa, tc.modulo
+            FROM grupos g
+            JOIN tipos_curso tc ON g.id_tipo = tc.id_tipo
+            WHERE g.id_docente = ? AND g.activo = 1
+        `, [docente_id]);
+
+        if (grupos.length === 0) return res.status(404).json({ error: 'No hay grupos activos' });
+
+        // Generar PDF
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename="PLANEADOR_${mes}_${anio}_${docente.nombre.toUpperCase()}.pdf"`);
+
+        const doc = new PDFDocument({ size: 'A4', margin: 50 });
+        doc.pipe(res);
+
+        const mesesLetra = ['', 'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
+        const nombreMes = mesesLetra[mesNum];
+
+        doc.fontSize(20).text('PLANEADOR DOCENTE', { align: 'center' });
+        doc.moveDown();
+        doc.fontSize(14).text('COLEGIATURA ANTIOQUEÑA DE BELLEZA SAS', { align: 'center' });
+        doc.fontSize(12).text('NIT: 901.363.247-8', { align: 'center' });
+        doc.moveDown(2);
+
+        doc.fontSize(12).text(`Docente: ${docente.nombre.toUpperCase()}`);
+        doc.text(`Documento: ${docente.documento}`);
+        doc.text(`Período: ${nombreMes} ${anio}`);
+        doc.moveDown(2);
+
+        for (const grupo of grupos) {
+            const [registros] = await pool.query(`
+                SELECT rh.fecha, rh.hora_ingreso, rh.hora_salida, rh.horas_trabajadas, rh.tema_desarrollado, rh.observaciones
+                FROM registros_horas rh
+                WHERE rh.id_docente = ? AND rh.id_grupo = ? AND MONTH(rh.fecha) = ? AND YEAR(rh.fecha) = ?
+                ORDER BY rh.fecha
+            `, [docente_id, grupo.id_grupo, mesNum, anioNum]);
+
+            doc.fontSize(14).text(`Grupo: ${grupo.codigo} - ${grupo.nombre}`, { underline: true });
+            doc.fontSize(12).text(`Programa: ${grupo.programa || ''}`);
+            doc.text(`Módulo: ${grupo.modulo || ''}`);
+            doc.moveDown();
+
+            if (registros.length === 0) {
+                doc.text('Sin registros para este grupo en el período seleccionado.');
+                doc.moveDown(2);
+                continue;
+            }
+
+            // Tabla simple
+            const tableTop = doc.y;
+            const rowHeight = 15;
+            const colWidths = [80, 60, 60, 50, 150, 100];
+
+            // Encabezados
+            let x = 50;
+            const headers = ['Fecha', 'Entrada', 'Salida', 'Horas', 'Tema Desarrollado', 'Observaciones'];
+            headers.forEach((h, i) => {
+                doc.fontSize(10).text(h, x, tableTop, { width: colWidths[i], align: 'center' });
+                x += colWidths[i];
+            });
+            doc.moveDown(rowHeight / 10);
+
+            // Filas
+            registros.forEach((r, i) => {
+                x = 50;
+                const y = tableTop + (i + 1) * rowHeight;
+                const values = [
+                    new Date(r.fecha).toLocaleDateString('es-CO'),
+                    r.hora_ingreso,
+                    r.hora_salida || '-',
+                    parseFloat(r.horas_trabajadas).toFixed(2),
+                    r.tema_desarrollado || '-',
+                    r.observaciones || '-'
+                ];
+                values.forEach((v, j) => {
+                    doc.fontSize(9).text(v, x, y, { width: colWidths[j] });
+                    x += colWidths[j];
+                });
+            });
+
+            doc.moveDown(3);
+        }
+
+        doc.moveDown(4);
+        doc.text('Firma Docente:', { align: 'left' });
+        doc.moveDown(5);
+        doc.text('___________________________', { align: 'left' });
+        doc.text(docente.nombre.toUpperCase(), { align: 'left' });
+
+        doc.end();
+
+    } catch (error) {
+        console.error('Error generando PDF planeador admin:', error);
+        res.status(500).json({ error: 'Error al generar PDF' });
+    }
+};
+
+
 
 module.exports = {
     obtenerEstadisticas,
@@ -1136,5 +1150,5 @@ module.exports = {
     obtenerHistoricoHoras,
     generarPDFCuentaAdmin,
     generarPDFPlaneadorAdmin,
-    obtenerPlaneadores
+    obtenerPeriodosPlaneador
 };

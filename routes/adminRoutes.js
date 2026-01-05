@@ -75,7 +75,7 @@ router.get('/cuenta-cobro/pdf', adminController.generarPDFCuentaAdmin);
 // PDF DE PLAENADOR PARA ADMIN
 // ========================================
 
-router.get('/planeadores', adminController.obtenerPlaneadores);
+router.get('/periodos-planeador', adminController.obtenerPeriodosPlaneador);
 router.get('/planeador/pdf', adminController.generarPDFPlaneadorAdmin);
 
 
