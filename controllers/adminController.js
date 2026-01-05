@@ -964,7 +964,7 @@ function numeroALetras(num) {
 // ========================================
 // PDF PLANEADOR PARA ADMIN (formato bonito, sin restricción)
 // ========================================
-exports.generarPDFPlaneadorAdmin = async (req, res) => {
+const generarPDFPlaneadorAdmin = async (req, res) => {
     try {
         const { planeador_id } = req.query;
         if (!planeador_id) {
