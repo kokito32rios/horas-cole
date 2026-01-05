@@ -1054,6 +1054,54 @@ const generarPDFPlaneadorAdmin = async (req, res) => {
     }
 };
 
+// ========================================
+// OBTENER PLANEADORES GENERADOS (para admin)
+// ========================================
+const obtenerPlaneadores = async (req, res) => {
+    try {
+        const { mes, anio, docente_id } = req.query;
+
+        let query = `
+            SELECT 
+                p.id_planeador,
+                u.nombre AS docente,
+                u.documento,
+                p.mes,
+                p.anio,
+                g.codigo AS grupo_codigo,
+                g.nombre AS grupo_nombre,
+                DATE_FORMAT(p.generado_el, '%d/%m/%Y %H:%i') AS generado_el
+            FROM planeadores p
+            JOIN usuarios u ON p.id_docente = u.id_usuario
+            LEFT JOIN grupos g ON p.id_grupo = g.id_grupo
+            WHERE u.id_rol = 2
+        `;
+        const params = [];
+
+        if (mes) {
+            query += ' AND p.mes = ?';
+            params.push(mes);
+        }
+        if (anio) {
+            query += ' AND p.anio = ?';
+            params.push(anio);
+        }
+        if (docente_id) {
+            query += ' AND p.id_docente = ?';
+            params.push(docente_id);
+        }
+
+        query += ' ORDER BY p.anio DESC, p.mes DESC, u.nombre';
+
+        const [planeadores] = await db.query(query, params);
+
+        res.json({ success: true, planeadores });
+    } catch (error) {
+        console.error('Error obteniendo planeadores:', error);
+        res.status(500).json({ error: 'Error al obtener planeadores' });
+    }
+};
+
 module.exports = {
     obtenerEstadisticas,
     obtenerUsuarios,
@@ -1087,5 +1135,6 @@ module.exports = {
     obtenerCuentasCobro,
     obtenerHistoricoHoras,
     generarPDFCuentaAdmin,
-    generarPDFPlaneadorAdmin
+    generarPDFPlaneadorAdmin,
+    obtenerPlaneadores
 };
