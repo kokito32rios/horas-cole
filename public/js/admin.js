@@ -1669,29 +1669,42 @@ async function cargarPeriodosPlaneador() {
 
         const tbody = document.getElementById('tablaPlaneadores');
 
-        if (!data.success || data.periodos.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center">No hay períodos con registros de horas</td></tr>';
+        // ✅ VALIDACIÓN FUERTE
+        if (!data || !data.success || !Array.isArray(data.periodos) || data.periodos.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="text-center">
+                        No hay períodos con registros de horas
+                    </td>
+                </tr>`;
             return;
         }
 
-        const meses = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+        const meses = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                       'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
         tbody.innerHTML = data.periodos.map(p => `
             <tr>
-                <td>${p.docente}</td>
-                <td>${p.documento}</td>
+                <td>${p.docente ?? '-'}</td>
+                <td>${p.documento ?? '-'}</td>
                 <td><strong>${meses[p.mes]} ${p.anio}</strong></td>
-                <td>${p.grupos.length} grupo(s)</td>
+                <td>${Array.isArray(p.grupos) ? p.grupos.length : 0} grupo(s)</td>
                 <td class="action-btns">
-                    <button class="btn-icon" onclick="abrirVistaPreviaPlaneador('/api/admin/planeador/pdf?docente_id=${p.docente_id}&mes=${p.mes}&anio=${p.anio}')" title="Vista Previa">👁️</button>
-                    <a href="/api/admin/planeador/pdf?docente_id=${p.docente_id}&mes=${p.mes}&anio=${p.anio}" target="_blank" class="btn-icon" title="Descargar PDF">📄</a>
+                    <button class="btn-icon"
+                        onclick="abrirVistaPreviaPlaneador('/api/admin/planeador/pdf?docente_id=${p.docente_id}&mes=${p.mes}&anio=${p.anio}')"
+                        title="Vista Previa">👁️</button>
+
+                    <a href="/api/admin/planeador/pdf?docente_id=${p.docente_id}&mes=${p.mes}&anio=${p.anio}"
+                       target="_blank"
+                       class="btn-icon"
+                       title="Descargar PDF">📄</a>
                 </td>
             </tr>
         `).join('');
 
     } catch (error) {
-        console.error('Error:', error);
-        mostrarNotificacion('Error al cargar períodos', 'error');
+        console.error('Error al cargar periodos del planeador:', error);
+        mostrarNotificacion('Error al cargar períodos del planeador', 'error');
     }
 }
 async function cargarDocentesFiltroPlaneador() {
