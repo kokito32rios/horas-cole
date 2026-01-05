@@ -1689,8 +1689,8 @@ async function cargarPlaneadores() {
                 <td>${p.grupo_codigo} - ${p.grupo_nombre}</td>
                 <td>${p.generado_el}</td>
                 <td class="action-btns">
-                    <button class="btn-icon" onclick="abrirVistaPreviaPlaneador('/api/docente/planeador/pdf?planeador_id=${p.id_planeador}')" title="Vista Previa">👁️</button>
-                    <a href="/api/docente/planeador/pdf?planeador_id=${p.id_planeador}" target="_blank" class="btn-icon" title="Descargar PDF">📄</a>
+                    <button class="btn-icon" onclick="abrirVistaPreviaPlaneador('/api/admin/planeador/pdf?planeador_id=${p.id_planeador}')" title="Vista Previa">👁️</button>
+                    <a href="/api/admin/planeador/pdf?planeador_id=${p.id_planeador}" target="_blank" class="btn-icon" title="Descargar PDF">📄</a>
                 </td>
             </tr>
         `).join('');
@@ -1718,11 +1718,10 @@ async function cargarDocentesFiltroPlaneador() {
 
 // Vista previa del planeador
 function abrirVistaPreviaPlaneador(pdfUrl) {
-    const modal = document.getElementById('modalVistaPreviaPlaneador');
+    document.querySelector('#modalVistaPreviaPlaneador h2').textContent = 'Vista Previa del Planeador';
     const iframe = document.getElementById('iframePlaneadorPreview');
-    
     iframe.src = pdfUrl;
-    modal.classList.add('show');
+    document.getElementById('modalVistaPreviaPlaneador').classList.add('show');
 }
 
 // Mejorar cerrarModal para limpiar el iframe

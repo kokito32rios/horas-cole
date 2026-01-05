@@ -961,6 +961,99 @@ function numeroALetras(num) {
     return texto.trim();
 }
 
+// ========================================
+// PDF PLANEADOR PARA ADMIN (formato bonito, sin restricción)
+// ========================================
+exports.generarPDFPlaneadorAdmin = async (req, res) => {
+    try {
+        const { planeador_id } = req.query;
+        if (!planeador_id) {
+            return res.status(400).json({ error: 'ID de planeador requerido' });
+        }
+
+        const [rows] = await pool.query(`
+            SELECT 
+                p.id_planeador,
+                p.mes,
+                p.anio,
+                p.contenido,
+                p.generado_el,
+                u.nombre AS docente,
+                u.documento,
+                g.codigo AS grupo_codigo,
+                g.nombre AS grupo_nombre
+            FROM planeadores p
+            JOIN usuarios u ON p.id_docente = u.id_usuario
+            LEFT JOIN grupos g ON p.id_grupo = g.id_grupo
+            WHERE p.id_planeador = ?
+        `, [planeador_id]);
+
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'Planeador no encontrado' });
+        }
+
+        const p = rows[0];
+
+        const mesesArray = ['', 'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO',
+                            'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
+        const nombreMes = mesesArray[p.mes];
+
+        const nombreArchivo = `PLANEADOR ${nombreMes} ${p.anio} - ${p.docente.toUpperCase()}.pdf`;
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename="${nombreArchivo}"`);
+
+        const doc = new PDFDocument({ size: 'A4', margin: 50 });
+        doc.pipe(res);
+
+        const hoy = new Date();
+        const mesesMinus = ['', 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+                            'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+        const fechaTexto = `${hoy.getDate()} de ${mesesMinus[hoy.getMonth() + 1]} de ${hoy.getFullYear()}`;
+        doc.fontSize(12).text(fechaTexto, { align: 'right' });
+        doc.moveDown(2);
+
+        doc.fontSize(20).text('PLANEADOR DOCENTE', { align: 'center' });
+        doc.moveDown(2);
+
+        doc.fontSize(14).text('COLEGIATURA ANTIOQUEÑA DE BELLEZA SAS', { align: 'center' });
+        doc.fontSize(12).text('NIT: 901.363.247-8', { align: 'center' });
+        doc.moveDown(3);
+
+        doc.fontSize(12).text('Docente:', { underline: true });
+        doc.fontSize(14).text(p.docente.toUpperCase());
+        doc.text(`Documento: ${p.documento}`);
+        doc.moveDown();
+
+        doc.text('Grupo:', { underline: true });
+        doc.fontSize(14).text(p.grupo_codigo ? `${p.grupo_codigo} - ${p.grupo_nombre}` : 'No asignado');
+        doc.moveDown();
+
+        doc.text('Período:', { underline: true });
+        doc.fontSize(14).text(`${nombreMes} ${p.anio}`);
+        doc.moveDown(2);
+
+        doc.fontSize(12).text('Contenido del Planeador:', { underline: true });
+        doc.moveDown(0.5);
+        doc.fontSize(11).text(p.contenido || 'Sin contenido registrado', { align: 'justify' });
+
+        doc.moveDown(4);
+        doc.fontSize(12).text(`Generado el: ${new Date(p.generado_el).toLocaleDateString('es-CO')}`);
+
+        doc.moveDown(4);
+        doc.text('Firma Docente:', { align: 'left' });
+        doc.moveDown(4);
+        doc.text('___________________________', { align: 'left' });
+        doc.text(p.docente, { align: 'left' });
+
+        doc.end();
+
+    } catch (error) {
+        console.error('Error generando PDF planeador para admin:', error);
+        res.status(500).json({ error: 'Error al generar PDF' });
+    }
+};
+
 module.exports = {
     obtenerEstadisticas,
     obtenerUsuarios,
@@ -993,5 +1086,6 @@ module.exports = {
     eliminarTipoCuenta,
     obtenerCuentasCobro,
     obtenerHistoricoHoras,
-    generarPDFCuentaAdmin
+    generarPDFCuentaAdmin,
+    generarPDFPlaneadorAdmin
 };

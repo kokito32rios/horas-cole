@@ -68,7 +68,7 @@ router.get('/roles', adminController.obtenerRoles);
 // ========================================
 // PDF DE CUENTA DE COBRO PARA ADMIN (formato oficial, sin restricción)
 // ========================================
-router.get('/cuenta-cobro/pdf', adminController.generarPDFCuentaAdmin);
+router.get('/planeador/pdf', adminController.generarPDFPlaneadorAdmin);
 
 
 
