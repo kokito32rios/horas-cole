@@ -1174,7 +1174,6 @@ const generarPlaneadorExcelAdmin = async (req, res) => {
 // ========================================
 const verPlaneadorExcelAdmin = async (req, res) => {
     await generarPlaneadorExcelAdmin(req, res);
-    // Forzar vista inline
     const disposition = res.getHeader('Content-Disposition');
     if (disposition) {
         res.setHeader('Content-Disposition', disposition.toString().replace('attachment', 'inline'));

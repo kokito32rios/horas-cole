@@ -1690,7 +1690,7 @@ async function cargarPeriodosPlaneador() {
                 <td><strong>${meses[p.mes]} ${p.anio}</strong></td>
                 <td>${Array.isArray(p.grupos) ? p.grupos.length : 0} grupo(s)</td>
                 <td class="action-btns">
-                    <button class="btn-icon" onclick="abrirVistaPreviaPlaneador('/api/admin/planeador/ver-excel?docente_id=${p.docente_id}&mes=${p.mes}&anio=${p.anio}')" title="Vista Previa">👁️</button>
+                    <a href="/api/admin/planeador/ver-excel?docente_id=${p.docente_id}&mes=${p.mes}&anio=${p.anio}" target="_blank" class="btn-icon" title="Vista Previa">👁️</a>
                     <a href="/api/admin/planeador/excel?docente_id=${p.docente_id}&mes=${p.mes}&anio=${p.anio}" target="_blank" class="btn-icon" title="Descargar Excel">📄</a>
                 </td>
             </tr>
@@ -1717,12 +1717,12 @@ async function cargarDocentesFiltroPlaneador() {
 }
 
 // Vista previa del planeador
-function abrirVistaPreviaPlaneador(excelUrl) {
-    document.querySelector('#modalVistaPreviaPlaneador h2').textContent = 'Vista Previa del Planeador (Excel)';
-    const iframe = document.getElementById('iframePlaneadorPreview');
-    iframe.src = 'https://view.officeapps.live.com/op/view.aspx?src=' + encodeURIComponent(excelUrl);
-    document.getElementById('modalVistaPreviaPlaneador').classList.add('show');
-}
+// function abrirVistaPreviaPlaneador(excelUrl) {
+//     document.querySelector('#modalVistaPreviaPlaneador h2').textContent = 'Vista Previa del Planeador (Excel)';
+//     const iframe = document.getElementById('iframePlaneadorPreview');
+//     iframe.src = 'https://view.officeapps.live.com/op/view.aspx?src=' + encodeURIComponent(excelUrl);
+//     document.getElementById('modalVistaPreviaPlaneador').classList.add('show');
+// }
 
 // Mejorar cerrarModal para limpiar el iframe
 const originalCerrarModal = cerrarModal;
