@@ -1716,13 +1716,7 @@ async function cargarDocentesFiltroPlaneador() {
     }
 }
 
-// Vista previa del planeador
-// function abrirVistaPreviaPlaneador(excelUrl) {
-//     document.querySelector('#modalVistaPreviaPlaneador h2').textContent = 'Vista Previa del Planeador (Excel)';
-//     const iframe = document.getElementById('iframePlaneadorPreview');
-//     iframe.src = 'https://view.officeapps.live.com/op/view.aspx?src=' + encodeURIComponent(excelUrl);
-//     document.getElementById('modalVistaPreviaPlaneador').classList.add('show');
-// }
+
 
 // Mejorar cerrarModal para limpiar el iframe
 const originalCerrarModal = cerrarModal;
