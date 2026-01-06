@@ -1000,7 +1000,7 @@ const obtenerPeriodosPlaneador = async (req, res) => {
 // ========================================
 // GENERAR PDF PLANEADOR PARA ADMIN (réplica exacta del Excel del docente)
 // ========================================
-exports.generarPDFPlaneadorAdmin = async (req, res) => {
+const generarPDFPlaneadorAdmin = async (req, res) => {
     try {
         const { docente_id, mes, anio } = req.query;
         if (!docente_id || !mes || !anio) {
