@@ -998,9 +998,9 @@ const obtenerPeriodosPlaneador = async (req, res) => {
 };
 
 // ========================================
-// GENERAR PDF PLANEADOR PARA ADMIN (en tiempo real, como el Excel del docente)
+// GENERAR PDF PLANEADOR PARA ADMIN (réplica exacta del Excel del docente)
 // ========================================
-const generarPDFPlaneadorAdmin = async (req, res) => {
+exports.generarPDFPlaneadorAdmin = async (req, res) => {
     try {
         const { docente_id, mes, anio } = req.query;
         if (!docente_id || !mes || !anio) {
@@ -1015,7 +1015,7 @@ const generarPDFPlaneadorAdmin = async (req, res) => {
         if (docenteRows.length === 0) return res.status(404).json({ error: 'Docente no encontrado' });
         const docente = docenteRows[0];
 
-        // Obtener todos los grupos del docente
+        // Obtener grupos del docente
         const [grupos] = await pool.query(`
             SELECT g.id_grupo, g.codigo, g.nombre AS grupo_nombre, tc.programa, tc.modulo
             FROM grupos g
@@ -1025,27 +1025,31 @@ const generarPDFPlaneadorAdmin = async (req, res) => {
 
         if (grupos.length === 0) return res.status(404).json({ error: 'No hay grupos activos' });
 
-        // Generar PDF
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `inline; filename="PLANEADOR_${mes}_${anio}_${docente.nombre.toUpperCase()}.pdf"`);
+        const mesesLetra = ['', 'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
 
-        const doc = new PDFDocument({ size: 'A4', margin: 50 });
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename="PLANEADOR_${mesesLetra[mesNum]}_${anioNum}_${docente.nombre.toUpperCase()}.pdf"`);
+
+        const doc = new PDFDocument({ size: 'A4', margin: 40 });
         doc.pipe(res);
 
-        const mesesLetra = ['', 'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
-        const nombreMes = mesesLetra[mesNum];
+        // Encabezado principal
+        doc.fontSize(14).text('COLEGIATURA ANTIOQUEÑA DE BELLEZA', 0, 40, { align: 'center' });
+        doc.fontSize(16).text('DIARIO DE CAMPO DOCENTE', 0, 60, { align: 'center', bold: true });
 
-        doc.fontSize(20).text('PLANEADOR DOCENTE', { align: 'center' });
-        doc.moveDown();
-        doc.fontSize(14).text('COLEGIATURA ANTIOQUEÑA DE BELLEZA SAS', { align: 'center' });
-        doc.fontSize(12).text('NIT: 901.363.247-8', { align: 'center' });
-        doc.moveDown(2);
+        doc.fontSize(10).text('PROCESO GESTION ACADEMICA', 400, 40, { align: 'right' });
 
-        doc.fontSize(12).text(`Docente: ${docente.nombre.toUpperCase()}`);
-        doc.text(`Documento: ${docente.documento}`);
-        doc.text(`Período: ${nombreMes} ${anio}`);
-        doc.moveDown(2);
+        // Línea 3
+        doc.fontSize(10).text('CODIGO: MGA-F-30', 50, 100);
+        doc.text('VERSIÓN: 1', 200, 100);
+        doc.text('FECHA: 29/11/2024', 350, 100, { align: 'right' });
 
+        // Docente
+        doc.fontSize(10).text('NOMBRE DEL DOCENTE:', 50, 130);
+        doc.fontSize(12).text(docente.nombre.toUpperCase(), 200, 130);
+
+        // Iterar por cada grupo
+        let y = 160;
         for (const grupo of grupos) {
             const [registros] = await pool.query(`
                 SELECT rh.fecha, rh.hora_ingreso, rh.hora_salida, rh.horas_trabajadas, rh.tema_desarrollado, rh.observaciones
@@ -1054,57 +1058,70 @@ const generarPDFPlaneadorAdmin = async (req, res) => {
                 ORDER BY rh.fecha
             `, [docente_id, grupo.id_grupo, mesNum, anioNum]);
 
-            doc.fontSize(14).text(`Grupo: ${grupo.codigo} - ${grupo.nombre}`, { underline: true });
-            doc.fontSize(12).text(`Programa: ${grupo.programa || ''}`);
-            doc.text(`Módulo: ${grupo.modulo || ''}`);
-            doc.moveDown();
+            // Programa y módulo
+            doc.fontSize(10).text('PROGRAMA', 50, y);
+            doc.text(grupo.programa || '', 150, y);
+            y += 20;
 
-            if (registros.length === 0) {
-                doc.text('Sin registros para este grupo en el período seleccionado.');
-                doc.moveDown(2);
-                continue;
-            }
+            doc.text('MÓDULO', 50, y);
+            doc.text(grupo.modulo || '', 150, y);
+            doc.text('GRUPO / JORNADA', 300, y);
+            doc.text(grupo.codigo || '', 420, y);
+            y += 30;
 
-            // Tabla simple
-            const tableTop = doc.y;
-            const rowHeight = 15;
-            const colWidths = [80, 60, 60, 50, 150, 100];
-
-            // Encabezados
+            // Tabla encabezado
+            const tableTop = y;
+            const colWidths = [80, 80, 80, 60, 140, 100];
             let x = 50;
-            const headers = ['Fecha', 'Entrada', 'Salida', 'Horas', 'Tema Desarrollado', 'Observaciones'];
-            headers.forEach((h, i) => {
-                doc.fontSize(10).text(h, x, tableTop, { width: colWidths[i], align: 'center' });
-                x += colWidths[i];
+            const headers = ['FECHA', 'HORA ENTRADA', 'HORA SALIDA', 'Q HORAS', 'TEMA DESARROLLADO EN CLASE', 'OBSERVACIONES'];
+            headers.forEach(h => {
+                doc.rect(x, tableTop, colWidths[headers.indexOf(h)], 20).stroke();
+                doc.text(h, x + 5, tableTop + 5);
+                x += colWidths[headers.indexOf(h)];
             });
-            doc.moveDown(rowHeight / 10);
+            y += 20;
 
-            // Filas
-            registros.forEach((r, i) => {
+            // Filas de datos
+            let totalHoras = 0;
+            registros.forEach(r => {
                 x = 50;
-                const y = tableTop + (i + 1) * rowHeight;
                 const values = [
                     new Date(r.fecha).toLocaleDateString('es-CO'),
                     r.hora_ingreso,
-                    r.hora_salida || '-',
+                    r.hora_salida || '',
                     parseFloat(r.horas_trabajadas).toFixed(2),
-                    r.tema_desarrollado || '-',
-                    r.observaciones || '-'
+                    r.tema_desarrollado || '',
+                    r.observaciones || ''
                 ];
-                values.forEach((v, j) => {
-                    doc.fontSize(9).text(v, x, y, { width: colWidths[j] });
-                    x += colWidths[j];
+                values.forEach(v => {
+                    doc.rect(x, y, colWidths[values.indexOf(v)], 20).stroke();
+                    doc.fontSize(9).text(v, x + 5, y + 5, { width: colWidths[values.indexOf(v)] - 10 });
+                    x += colWidths[values.indexOf(v)];
                 });
+                totalHoras += parseFloat(r.horas_trabajadas);
+                y += 20;
             });
 
-            doc.moveDown(3);
+            // Total
+            doc.rect(50, y, 540, 20).stroke();
+            doc.text('TOTAL HORAS SEMANA: 4 HORAS', 55, y + 5);
+            doc.text('TOTAL MES', 300, y + 5);
+            doc.text(totalHoras.toFixed(2), 400, y + 5);
+            y += 40;
+
+            // Pie
+            doc.text('Revisado por:', 50, y);
+            y += 30;
+            doc.text('Fecha de Revisión:', 50, y);
+            doc.text('Fecha de Aprobación y Autorización:', 300, y);
+            y += 50;
         }
 
-        doc.moveDown(4);
-        doc.text('Firma Docente:', { align: 'left' });
-        doc.moveDown(5);
-        doc.text('___________________________', { align: 'left' });
-        doc.text(docente.nombre.toUpperCase(), { align: 'left' });
+        // Firma final
+        doc.fontSize(12).text('Firma Docente:', 50, y);
+        y += 40;
+        doc.moveTo(50, y).lineTo(300, y).stroke();
+        doc.text(docente.nombre.toUpperCase(), 50, y + 10);
 
         doc.end();
 
@@ -1113,7 +1130,6 @@ const generarPDFPlaneadorAdmin = async (req, res) => {
         res.status(500).json({ error: 'Error al generar PDF' });
     }
 };
-
 
 
 module.exports = {
