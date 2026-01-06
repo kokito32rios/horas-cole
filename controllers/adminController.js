@@ -998,94 +998,127 @@ const obtenerPeriodosPlaneador = async (req, res) => {
 };
 
 // ========================================
-// GENERAR PDF PLANEADOR PARA ADMIN (réplica exacta del Excel del docente)
+// GENERAR PLANEADOR EXCEL PARA ADMIN (idéntico al del docente)
 // ========================================
-const generarPDFPlaneadorAdmin = async (req, res) => {
+const generarPlaneadorExcelAdmin = async (req, res) => {
     try {
         const { docente_id, mes, anio } = req.query;
         if (!docente_id || !mes || !anio) {
-            return res.status(400).json({ error: 'Parámetros requeridos: docente_id, mes, anio' });
+            return res.status(400).send('Faltan parámetros: docente_id, mes, anio');
         }
 
         const mesNum = parseInt(mes);
         const anioNum = parseInt(anio);
+        if (isNaN(mesNum) || isNaN(anioNum) || mesNum < 1 || mesNum > 12) {
+            return res.status(400).send('Mes o año inválido');
+        }
 
         // Obtener docente
-        const [docenteRows] = await pool.query('SELECT nombre, documento FROM usuarios WHERE id_usuario = ?', [docente_id]);
-        if (docenteRows.length === 0) return res.status(404).json({ error: 'Docente no encontrado' });
+        const [docenteRows] = await db.query(
+            `SELECT u.nombre, u.documento 
+             FROM usuarios u 
+             WHERE u.id_usuario = ?`,
+            [docente_id]
+        );
+        if (docenteRows.length === 0) {
+            return res.status(404).send('Docente no encontrado');
+        }
         const docente = docenteRows[0];
 
-        // Obtener grupos del docente
-        const [grupos] = await pool.query(`
-            SELECT g.id_grupo, g.codigo, g.nombre AS grupo_nombre, tc.programa, tc.modulo
+        // Obtener todos los grupos del docente
+        const [grupos] = await db.query(`
+            SELECT DISTINCT g.id_grupo, g.codigo, g.nombre AS grupo_nombre, tc.programa, tc.modulo
             FROM grupos g
             JOIN tipos_curso tc ON g.id_tipo = tc.id_tipo
             WHERE g.id_docente = ? AND g.activo = 1
         `, [docente_id]);
 
-        if (grupos.length === 0) return res.status(404).json({ error: 'No hay grupos activos' });
+        if (grupos.length === 0) {
+            return res.status(404).send('No hay grupos activos para este docente');
+        }
 
-        const mesesLetra = ['', 'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
+        const workbook = new ExcelJS.Workbook();
+        workbook.creator = 'Sistema Registro Horas - Admin';
+        workbook.created = new Date();
 
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `inline; filename="PLANEADOR_${mesesLetra[mesNum]}_${anioNum}_${docente.nombre.toUpperCase()}.pdf"`);
+        const mesesLetra = ['', 'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 
+                            'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
 
-        const doc = new PDFDocument({ size: 'A4', margin: 40 });
-        doc.pipe(res);
-
-        // Encabezado principal
-        doc.fontSize(14).text('COLEGIATURA ANTIOQUEÑA DE BELLEZA', 0, 40, { align: 'center' });
-        doc.fontSize(16).text('DIARIO DE CAMPO DOCENTE', 0, 60, { align: 'center', bold: true });
-
-        doc.fontSize(10).text('PROCESO GESTION ACADEMICA', 400, 40, { align: 'right' });
-
-        // Línea 3
-        doc.fontSize(10).text('CODIGO: MGA-F-30', 50, 100);
-        doc.text('VERSIÓN: 1', 200, 100);
-        doc.text('FECHA: 29/11/2024', 350, 100, { align: 'right' });
-
-        // Docente
-        doc.fontSize(10).text('NOMBRE DEL DOCENTE:', 50, 130);
-        doc.fontSize(12).text(docente.nombre.toUpperCase(), 200, 130);
-
-        // Iterar por cada grupo
-        let y = 160;
         for (const grupo of grupos) {
-            const [registros] = await pool.query(`
-                SELECT rh.fecha, rh.hora_ingreso, rh.hora_salida, rh.horas_trabajadas, rh.tema_desarrollado, rh.observaciones
-                FROM registros_horas rh
-                WHERE rh.id_docente = ? AND rh.id_grupo = ? AND MONTH(rh.fecha) = ? AND YEAR(rh.fecha) = ?
-                ORDER BY rh.fecha
-            `, [docente_id, grupo.id_grupo, mesNum, anioNum]);
+            const [registros] = await db.query(
+                `SELECT rh.fecha, rh.hora_ingreso, rh.hora_salida, rh.horas_trabajadas,
+                        rh.tema_desarrollado, rh.observaciones
+                 FROM registros_horas rh
+                 WHERE rh.id_docente = ? AND rh.id_grupo = ? 
+                 AND MONTH(rh.fecha) = ? AND YEAR(rh.fecha) = ?
+                 ORDER BY rh.fecha`,
+                [docente_id, grupo.id_grupo, mesNum, anioNum]
+            );
 
-            // Programa y módulo
-            doc.fontSize(10).text('PROGRAMA', 50, y);
-            doc.text(grupo.programa || '', 150, y);
-            y += 20;
+            const sheet = workbook.addWorksheet(grupo.codigo || 'Grupo');
 
-            doc.text('MÓDULO', 50, y);
-            doc.text(grupo.modulo || '', 150, y);
-            doc.text('GRUPO / JORNADA', 300, y);
-            doc.text(grupo.codigo || '', 420, y);
-            y += 30;
+            sheet.columns = [
+                { header: '', key: 'a', width: 15 },
+                { header: '', key: 'b', width: 20 },
+                { header: '', key: 'c', width: 20 },
+                { header: '', key: 'd', width: 15 },
+                { header: '', key: 'e', width: 50 },
+                { header: '', key: 'f', width: 40 }
+            ];
 
-            // Tabla encabezado
-            const tableTop = y;
-            const colWidths = [80, 80, 80, 60, 140, 100];
-            let x = 50;
-            const headers = ['FECHA', 'HORA ENTRADA', 'HORA SALIDA', 'Q HORAS', 'TEMA DESARROLLADO EN CLASE', 'OBSERVACIONES'];
-            headers.forEach(h => {
-                doc.rect(x, tableTop, colWidths[headers.indexOf(h)], 20).stroke();
-                doc.text(h, x + 5, tableTop + 5);
-                x += colWidths[headers.indexOf(h)];
+            // === FORMATO IDÉNTICO AL DEL DOCENTE ===
+            sheet.mergeCells('F1:F3');
+            sheet.getCell('F1').value = 'PROCESO GESTION ACADEMICA';
+            sheet.getCell('F1').font = { bold: true };
+            sheet.getCell('F1').alignment = { vertical: 'middle', horizontal: 'center' };
+
+            sheet.mergeCells('B1:E1');
+            sheet.getCell('B1').value = 'COLEGIATURA ANTIOQUEÑA DE BELLEZA';
+            sheet.getCell('B1').font = { bold: true, size: 14 };
+            sheet.getCell('B1').alignment = { horizontal: 'center' };
+
+            sheet.mergeCells('B2:E2');
+            sheet.getCell('B2').value = 'DIARIO DE CAMPO DOCENTE';
+            sheet.getCell('B2').font = { bold: true, size: 16 };
+            sheet.getCell('B2').alignment = { horizontal: 'center' };
+
+            sheet.getCell('B3').value = 'CODIGO: MGA-F-30';
+            sheet.getCell('C3').value = 'VERSIÓN: 1';
+            sheet.getCell('E3').value = 'FECHA: 29/11/2024';
+
+            sheet.mergeCells('A4:B4');
+            sheet.getCell('A4').value = 'NOMBRE DEL DOCENTE:';
+            sheet.getCell('A4').font = { bold: true };
+            sheet.mergeCells('C4:F4');
+            sheet.getCell('C4').value = docente.nombre.toUpperCase();
+
+            sheet.mergeCells('A5:B5');
+            sheet.getCell('A5').value = 'PROGRAMA';
+            sheet.getCell('A5').font = { bold: true };
+            sheet.mergeCells('C5:F5');
+            sheet.getCell('C5').value = grupo.programa || '';
+
+            sheet.mergeCells('A6:B6');
+            sheet.getCell('A6').value = 'MÓDULO';
+            sheet.getCell('A6').font = { bold: true };
+            sheet.mergeCells('C6:D6');
+            sheet.getCell('C6').value = grupo.modulo || '';
+            sheet.getCell('E6').value = 'GRUPO / JORNADA';
+            sheet.getCell('E6').font = { bold: true };
+            sheet.getCell('F6').value = grupo.grupo_nombre || '';
+
+            const headerRow = sheet.getRow(7);
+            headerRow.values = ['', 'FECHA', 'HORA ENTRADA', 'HORA SALIDA', 'Q HORAS', 'TEMA DESARROLLADO EN CLASE', 'OBSERVACIONES'];
+            headerRow.font = { bold: true };
+            headerRow.eachCell((cell) => {
+                cell.border = { top: { style: 'medium' }, left: { style: 'medium' }, bottom: { style: 'medium' }, right: { style: 'medium' } };
             });
-            y += 20;
 
-            // Filas de datos
-            let totalHoras = 0;
-            registros.forEach(r => {
-                x = 50;
-                const values = [
+            let totalHorasMes = 0;
+            registros.forEach((r, index) => {
+                const row = sheet.getRow(8 + index);
+                row.values = [
+                    '',
                     new Date(r.fecha).toLocaleDateString('es-CO'),
                     r.hora_ingreso,
                     r.hora_salida || '',
@@ -1093,43 +1126,62 @@ const generarPDFPlaneadorAdmin = async (req, res) => {
                     r.tema_desarrollado || '',
                     r.observaciones || ''
                 ];
-                values.forEach(v => {
-                    doc.rect(x, y, colWidths[values.indexOf(v)], 20).stroke();
-                    doc.fontSize(9).text(v, x + 5, y + 5, { width: colWidths[values.indexOf(v)] - 10 });
-                    x += colWidths[values.indexOf(v)];
+                row.eachCell((cell) => {
+                    cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
                 });
-                totalHoras += parseFloat(r.horas_trabajadas);
-                y += 20;
+                totalHorasMes += parseFloat(r.horas_trabajadas);
             });
 
-            // Total
-            doc.rect(50, y, 540, 20).stroke();
-            doc.text('TOTAL HORAS SEMANA: 4 HORAS', 55, y + 5);
-            doc.text('TOTAL MES', 300, y + 5);
-            doc.text(totalHoras.toFixed(2), 400, y + 5);
-            y += 40;
+            const totalRowIndex = 8 + registros.length + 1;
+            const totalRow = sheet.getRow(totalRowIndex);
+            totalRow.getCell('A').value = 'TOTAL HORAS SEMANA: 4 HORAS';
+            sheet.mergeCells(`C${totalRowIndex}:D${totalRowIndex}`);
+            totalRow.getCell('C').value = 'TOTAL MES';
+            totalRow.getCell('D').value = totalHorasMes.toFixed(2);
+            totalRow.eachCell((cell, colNumber) => {
+                if (colNumber >= 1 && colNumber <= 6) {
+                    cell.border = { top: { style: 'medium' }, left: { style: 'medium' }, bottom: { style: 'medium' }, right: { style: 'medium' } };
+                }
+            });
 
-            // Pie
-            doc.text('Revisado por:', 50, y);
-            y += 30;
-            doc.text('Fecha de Revisión:', 50, y);
-            doc.text('Fecha de Aprobación y Autorización:', 300, y);
-            y += 50;
+            const pieRow1 = totalRowIndex + 1;
+            sheet.getCell(`A${pieRow1}`).value = 'Revisado por:';
+
+            const pieRow2 = pieRow1 + 1;
+            sheet.getCell(`A${pieRow2}`).value = 'Fecha de Revisión:';
+            sheet.mergeCells(`E${pieRow2}:F${pieRow2}`);
+            sheet.getCell(`E${pieRow2}`).value = 'Fecha de Aprobación y Autorización:';
         }
 
-        // Firma final
-        doc.fontSize(12).text('Firma Docente:', 50, y);
-        y += 40;
-        doc.moveTo(50, y).lineTo(300, y).stroke();
-        doc.text(docente.nombre.toUpperCase(), 50, y + 10);
+        const nombreDocente = docente.nombre.trim().toUpperCase().replace(/[^A-Z\s]/g, '');
+        const mesNombre = mesesLetra[mesNum];
+        const nombreArchivo = `PLANEADOR ${mesNombre} - TODOS GRUPOS - ${nombreDocente}.xlsx`;
 
-        doc.end();
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename="${nombreArchivo}"`);
+
+        await workbook.xlsx.write(res);
+        res.end();
 
     } catch (error) {
-        console.error('Error generando PDF planeador admin:', error);
-        res.status(500).json({ error: 'Error al generar PDF' });
+        console.error('Error generando planeador Excel para admin:', error);
+        res.status(500).send('Error al generar el planeador');
     }
 };
+
+// ========================================
+// VER PLANEADOR EXCEL EN NAVEGADOR (vista previa, igual que el docente)
+// ========================================
+const verPlaneadorExcelAdmin = async (req, res) => {
+    await generarPlaneadorExcelAdmin(req, res);
+    // Forzar vista inline
+    const disposition = res.getHeader('Content-Disposition');
+    if (disposition) {
+        res.setHeader('Content-Disposition', disposition.toString().replace('attachment', 'inline'));
+    }
+};
+
+
 
 
 module.exports = {
@@ -1165,6 +1217,7 @@ module.exports = {
     obtenerCuentasCobro,
     obtenerHistoricoHoras,
     generarPDFCuentaAdmin,
-    generarPDFPlaneadorAdmin,
-    obtenerPeriodosPlaneador
+    obtenerPeriodosPlaneador,
+    generarPlaneadorExcelAdmin,
+    verPlaneadorExcelAdmin
 };
