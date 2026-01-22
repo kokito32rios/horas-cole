@@ -77,24 +77,26 @@ function cambiarTabDocente(tabName) {
         toggleMenuDocente();
     }
 
-    // Cargar datos según la pestaña
-    if (tabName === 'dashboard') {
-        cargarDashboard();
-    } else if (tabName === 'grupos') {
-        cargarMisGrupos();
-    } else if (tabName === 'registrar') {
-        cargarGruposSelect();
-    } else if (tabName === 'historial') {
-        cargarGruposSelectFiltro();
-        cargarHistorial();
-    } else if (tabName === 'cuentas') {
-        cargarCuentasGeneradas();
-    } else if (tabName === 'perfil') {
-        cargarMiPerfil();
-    } else if (tabName === 'planeadores') {
-        llenarAniosPlaneador();
-        cargarGruposPlaneador();
-    }
+    // ✅ CARGAR DATOS CON DELAY PARA QUE FUNCIONE EN MÓVIL (igual que admin)
+    setTimeout(() => {
+        if (tabName === 'dashboard') {
+            cargarDashboard();
+        } else if (tabName === 'grupos') {
+            cargarMisGrupos();
+        } else if (tabName === 'registrar') {
+            cargarGruposSelect();
+        } else if (tabName === 'historial') {
+            cargarGruposSelectFiltro();
+            cargarHistorial();
+        } else if (tabName === 'cuentas') {
+            cargarCuentasGeneradas();
+        } else if (tabName === 'perfil') {
+            cargarMiPerfil();  // ← AHORA CON DELAY
+        } else if (tabName === 'planeadores') {
+            llenarAniosPlaneador();
+            cargarGruposPlaneador();
+        }
+    }, 200); // ← DELAY DE 200ms COMO EN ADMIN
 }
 
 // ========================================
