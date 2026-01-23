@@ -15,7 +15,7 @@
           <span class="admin-badge">Docente</span>
         </div>
 
-        <!-- Botón hamburguesa (ya lo tenías, lo mantenemos) -->
+        <!-- Botón hamburguesa -->
         <button
           class="hamburger-btn"
           id="hamburgerBtn"
@@ -47,7 +47,7 @@
       onclick="toggleMenuDocente()"
     ></div>
 
-    <!-- Navegación (con clase admin-nav que ya usas) -->
+    <!-- Navegación -->
     <nav class="admin-nav" id="adminNav">
       <button class="nav-btn active" data-tab="dashboard">📊 Dashboard</button>
       <button class="nav-btn" data-tab="grupos">📚 Mis Grupos</button>
@@ -130,7 +130,6 @@
                 <th>Código</th>
                 <th>Nombre del Grupo</th>
                 <th>Programa</th>
-                <!-- ← NUEVA COLUMNA -->
                 <th>Valor/Hora</th>
                 <th>Estado</th>
               </tr>
@@ -434,41 +433,6 @@
             computadora.
           </p>
         </div>
-
-        <!-- MODAL: Vista Previa Planeador -->
-        <div id="modalPlaneadorPreview" class="modal">
-          <div class="modal-content modal-large">
-            <span class="close-modal" onclick="cerrarModalPlaneador()"
-              >&times;</span
-            >
-            <h2>Vista Previa del Planeador</h2>
-
-            <div
-              class="table-container"
-              style="max-height: 70vh; overflow-y: auto"
-            >
-              <table class="admin-table">
-                <thead>
-                  <tr>
-                    <th>Fecha</th>
-                    <th>Hora Entrada</th>
-                    <th>Hora Salida</th>
-                    <th>Q Horas</th>
-                    <th>Tema Desarrollado en Clase</th>
-                    <th>Observaciones</th>
-                  </tr>
-                </thead>
-                <tbody id="tablaPreviewPlaneador">
-                  <tr>
-                    <td colspan="6" class="text-center">
-                      Selecciona mes, año y grupo para ver la vista previa
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
       </section>
 
       <!-- TAB: MI PERFIL -->
@@ -522,6 +486,8 @@
         </div>
       </section>
     </main>
+
+    <!-- MODALES - FUERA DEL CONTENEDOR PRINCIPAL -->
 
     <!-- MODAL: Cambiar Contraseña -->
     <div id="modalPassword" class="modal">
@@ -587,6 +553,38 @@
           >
             Cancelar
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: Vista Previa Planeador -->
+    <div id="modalPlaneadorPreview" class="modal">
+      <div class="modal-content modal-large">
+        <span class="close-modal" onclick="cerrarModalPlaneador()"
+          >&times;</span
+        >
+        <h2>Vista Previa del Planeador</h2>
+
+        <div class="table-container" style="max-height: 70vh; overflow-y: auto">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Hora Entrada</th>
+                <th>Hora Salida</th>
+                <th>Q Horas</th>
+                <th>Tema Desarrollado en Clase</th>
+                <th>Observaciones</th>
+              </tr>
+            </thead>
+            <tbody id="tablaPreviewPlaneador">
+              <tr>
+                <td colspan="6" class="text-center">
+                  Selecciona mes, año y grupo para ver la vista previa
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
