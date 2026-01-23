@@ -679,11 +679,24 @@ function formatearMoneda(valor) {
 }
 
 function formatearFecha(fecha) {
-    if (!fecha) return '-';
-    const d = new Date(fecha.includes('T') || fecha.includes(' ') ? fecha : fecha + 'T00:00:00');
-    if (isNaN(d)) return '-';
-    return d.toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric' });
+  if (!fecha) return '-';
+
+  // Asegura trabajar solo con la parte YYYY-MM-DD
+  const [year, month, day] = String(fecha).substring(0, 10).split('-');
+
+  const dateLocal = new Date(
+    Number(year),
+    Number(month) - 1,
+    Number(day)
+  );
+
+  return dateLocal.toLocaleDateString('es-CO', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  });
 }
+
 
 function getNombreMes(num) {
     const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
