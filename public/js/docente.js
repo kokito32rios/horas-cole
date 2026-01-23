@@ -60,6 +60,29 @@ function toggleMenuDocente() {
     hamburger.classList.toggle('active');
 }
 
+function forzarVisibilidadPerfil() {
+    const tabPerfil = document.getElementById('tab-perfil');
+    if (tabPerfil) {
+        // Remover cualquier estilo inline que lo oculte
+        tabPerfil.style.display = 'block';
+        tabPerfil.style.visibility = 'visible';
+        tabPerfil.style.opacity = '1';
+        
+        // Asegurar que tenga la clase active
+        tabPerfil.classList.add('active');
+        
+        console.log('✅ Visibilidad forzada para tab-perfil');
+        
+        // También forzar visibilidad de los elementos hijos
+        const elementos = tabPerfil.querySelectorAll('.perfil-container, .perfil-card, .perfil-info, .info-item');
+        elementos.forEach(elem => {
+            elem.style.display = '';
+            elem.style.visibility = 'visible';
+            elem.style.opacity = '1';
+        });
+    }
+}
+
 function cambiarTabDocente(tabName) {
     // Desactivar todos
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
