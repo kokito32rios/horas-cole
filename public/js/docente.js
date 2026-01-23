@@ -422,22 +422,73 @@ function descargarCuenta(id) {
 // MI PERFIL
 // ========================================
 async function cargarMiPerfil() {
+    console.log('========== INICIO cargarMiPerfil ==========');
+    
     try {
+        console.log('1. Haciendo fetch a /api/docente/mi-perfil...');
         const response = await fetch('/api/docente/mi-perfil');
+        
+        console.log('2. Response status:', response.status);
+        console.log('3. Response OK?:', response.ok);
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('ERROR en response:', errorText);
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const data = await response.json();
+        console.log('4. Datos recibidos:', data);
         
         if (data.success && data.perfil) {
             const p = data.perfil;
-            document.getElementById('perfilNombre').textContent = p.nombre;
-            document.getElementById('perfilDocumento').textContent = p.documento;
-            document.getElementById('perfilEmail').textContent = p.email || '-';
-            document.getElementById('perfilTelefono').textContent = p.telefono || '-';
-            document.getElementById('perfilBanco').textContent = p.banco || '-';
-            document.getElementById('perfilTipoCuenta').textContent = p.tipo_cuenta || '-';
-            document.getElementById('perfilNumeroCuenta').textContent = p.numero_cuenta || '-';
+            console.log('5. Perfil extraído:', p);
+            
+            // Verificar que los elementos existan
+            const elementos = {
+                nombre: document.getElementById('perfilNombre'),
+                documento: document.getElementById('perfilDocumento'),
+                email: document.getElementById('perfilEmail'),
+                telefono: document.getElementById('perfilTelefono'),
+                banco: document.getElementById('perfilBanco'),
+                tipoCuenta: document.getElementById('perfilTipoCuenta'),
+                numeroCuenta: document.getElementById('perfilNumeroCuenta')
+            };
+            
+            console.log('6. Elementos encontrados:', elementos);
+            
+            // Verificar que TODOS los elementos existan
+            const elementosFaltantes = Object.entries(elementos)
+                .filter(([key, elem]) => !elem)
+                .map(([key]) => key);
+            
+            if (elementosFaltantes.length > 0) {
+                console.error('ELEMENTOS FALTANTES:', elementosFaltantes);
+                mostrarNotificacion('Error: elementos del DOM no encontrados', 'error');
+                return;
+            }
+            
+            // Asignar valores
+            console.log('7. Asignando valores...');
+            elementos.nombre.textContent = p.nombre || 'Sin nombre';
+            elementos.documento.textContent = p.documento || '-';
+            elementos.email.textContent = p.email || 'No registrado';
+            elementos.telefono.textContent = p.telefono || 'No registrado';
+            elementos.banco.textContent = p.banco || 'No asignado';
+            elementos.tipoCuenta.textContent = p.tipo_cuenta || 'No asignado';
+            elementos.numeroCuenta.textContent = p.numero_cuenta || 'No asignado';
+            
+            console.log('8. ✅ Valores asignados correctamente');
+            console.log('========== FIN cargarMiPerfil OK ==========');
+        } else {
+            console.error('DATOS INVÁLIDOS:', data);
+            mostrarNotificacion('No se pudieron cargar los datos del perfil', 'warning');
         }
     } catch (error) {
-        console.error('Error cargando perfil:', error);
+        console.error('========== ERROR EN cargarMiPerfil ==========');
+        console.error('Error completo:', error);
+        console.error('Stack:', error.stack);
+        mostrarNotificacion('Error al cargar el perfil. Revisa la consola.', 'error');
     }
 }
 

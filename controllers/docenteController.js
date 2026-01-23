@@ -330,7 +330,11 @@ const obtenerCuentasGeneradas = async (req, res) => {
 // ========================================
 const obtenerMiPerfil = async (req, res) => {
     try {
+        console.log('========== CONTROLLER: obtenerMiPerfil ==========');
+        console.log('1. Session usuario:', req.session.usuario);
+        
         const idDocente = req.session.usuario.id;
+        console.log('2. ID Docente:', idDocente);
         
         const [perfil] = await db.query(
             `SELECT 
@@ -348,11 +352,31 @@ const obtenerMiPerfil = async (req, res) => {
             [idDocente]
         );
         
-        res.json({ success: true, perfil: perfil[0] });
+        console.log('3. Query ejecutada. Resultados:', perfil);
+        console.log('4. Primer registro:', perfil[0]);
+        
+        if (!perfil || perfil.length === 0) {
+            console.error('NO SE ENCONTRÓ PERFIL');
+            return res.status(404).json({ 
+                success: false,
+                error: 'Perfil no encontrado' 
+            });
+        }
+        
+        console.log('5. Enviando respuesta exitosa');
+        res.json({ 
+            success: true, 
+            perfil: perfil[0] 
+        });
+        console.log('========== FIN CONTROLLER OK ==========');
         
     } catch (error) {
-        console.error('Error obteniendo perfil:', error);
-        res.status(500).json({ error: 'Error al obtener perfil' });
+        console.error('========== ERROR EN CONTROLLER ==========');
+        console.error('Error completo:', error);
+        res.status(500).json({ 
+            success: false,
+            error: 'Error al obtener perfil' 
+        });
     }
 };
 
