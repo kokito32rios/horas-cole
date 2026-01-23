@@ -91,6 +91,7 @@ function cambiarTabDocente(tabName) {
         } else if (tabName === 'cuentas') {
             cargarCuentasGeneradas();
         } else if (tabName === 'perfil') {
+            forzarVisibilidadPerfil();
             cargarMiPerfil();  // ← AHORA CON DELAY
         } else if (tabName === 'planeadores') {
             llenarAniosPlaneador();
