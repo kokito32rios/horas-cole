@@ -1636,24 +1636,24 @@ async function cargarDocentesFiltro() {
 }
 
 function formatearFecha(fecha) {
-    if (!fecha) return '-';
+  if (!fecha) return '-';
 
-    let d;
+  // Asegura trabajar solo con la parte YYYY-MM-DD
+  const [year, month, day] = String(fecha).substring(0, 10).split('-');
 
-    if (fecha.includes('T') || fecha.includes(' ')) {
-        d = new Date(fecha);
-    } else {
-        d = new Date(fecha + 'T00:00:00');
-    }
+  const dateLocal = new Date(
+    Number(year),
+    Number(month) - 1,
+    Number(day)
+  );
 
-    if (isNaN(d)) return '-';
-
-    return d.toLocaleDateString('es-CO', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-    });
+  return dateLocal.toLocaleDateString('es-CO', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  });
 }
+
 
 // ========================================
 // PLANEADORES REALIZADOS
